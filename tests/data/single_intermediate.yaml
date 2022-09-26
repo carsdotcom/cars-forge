@@ -1,0 +1,10 @@
+# Forge required-only plus environment name configs for single job
+name: test-single-intermediate
+service: single
+ram:
+  - [64]
+aws_role: test_role
+run_cmd: dummy.sh dev test
+forge_env: dev
+market: spot
+ami: single_ami

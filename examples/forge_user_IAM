@@ -1,0 +1,85 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "EC2",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:TerminateInstances",
+                "ec2:RequestSpotInstances",
+                "ec2:CreateTags",
+                "ec2:RunInstances",
+                "ec2:DeleteLaunchTemplate",
+                "ec2:RequestSpotInstances",
+                "ec2:ModifyFleet",
+                "ec2:CreateTags",
+                "ec2:DeleteFleets",
+                "ec2:RequestSpotFleet",
+                "ec2:RunInstances",
+                "ec2:CreateFleet",
+                "ec2:CreateLaunchTemplateVersion",
+                "ec2:Describe*",
+                "ec2:CreateLaunchTemplate",
+                "ec2:GetLaunchTemplateData",
+                "ec2:ModifySpotFleetRequest",
+                "ec2:CancelSpot*",
+                "ec2:ModifyLaunchTemplate",
+                "ec2:ImportImage"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "IAM",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateServiceLinkedRole"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "Pricing",
+            "Effect": "Allow",
+            "Action": [
+                "pricing:DescribeServices",
+                "pricing:GetProducts",
+                "pricing:GetAttributeValues"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "IAMPass",
+            "Effect": "Allow",
+            "Action": [
+                "iam:PassRole",
+                "iam:List*"
+            ],
+            "Resource": [
+                "arn:aws:iam::ACCOUNT_ID:role/forge-test-example"
+            ]
+        },
+        {
+            "Sid": "Secret",
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret"
+            ],
+            "Resource": [
+                "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:forge-pem*"
+            ]
+        },
+        {
+            "Sid": "SSM",
+            "Effect": "Allow",
+            "Action": [
+                "ssm:GetParameterHistory",
+                "ssm:GetParametersByPath",
+                "ssm:GetParameters",
+                "ssm:GetParameter"
+            ],
+            "Resource": [
+                "arn:aws:ssm:us-east-1::parameter/aws/service/global-infrastructure/regions*"
+            ]
+        }
+    ]
+}

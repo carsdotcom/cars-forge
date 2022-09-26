@@ -1,0 +1,44 @@
+forge_env: dev
+aws_profile: data-dev
+aws_az: us-east-1a
+ec2_amis:
+  single:
+    - ami-123
+    - 30
+    - /dev/sda1
+  cluster:
+    - ami-456
+    - 30
+    - /dev/xvda
+  single_gpu:
+    - ami-789
+    - 90
+    - /dev/sda1
+aws_subnet: subnet-123
+ec2_key: bdp
+aws_security_group: sg-123
+forge_pem_secret: forge-pem
+excluded_ec2s: ["t2.medium","t2.large","m4.large", "*g.*", "gd.*", "*metal*", "g4ad*"]
+tags:
+  - Key: "Name"
+    Value: "{name}-{market}-{task}-{date}"
+  - Key: "Cars_app"
+    Value: "{name}"
+  - Key: "User"
+    Value: "{user}"
+user_data:
+  single: single.sh
+  cluster:
+    master: cluster-master.sh
+    worker: cluster-worker.sh
+additional_config:
+  - name: pip
+    type: list
+    default: []
+    constraints: []
+    error: ""
+  - name: version
+    type: float
+    default: 2.3
+    constraints: [2.3, 3.0, 3.1]
+    error: "Invalid Spark version. Only 2.3, 3.0 and 3.1 are supported."

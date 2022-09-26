@@ -1,0 +1,9 @@
+# Forge required-only configs for cluster job
+name: test-cluster-basic
+service: cluster
+ram:
+  - [8]
+  - [128]
+aws_role: test_role
+run_cmd: dummy.sh dev test
+ami: cluster_ami

@@ -1,0 +1,35 @@
+forge_env: example
+aws_profile: forge-example
+aws_az: us-east-1a
+ec2_amis:
+  single:
+    ami: ami-05fa00d4c63e32376
+    disk: 30
+    disk_device_name: /dev/xvda
+  cluster:
+    ami: ami-05fa00d4c63e32376
+    disk: 30
+    disk_device_name: /dev/xvda
+aws_subnet: subnet-123abc456def789gh
+ec2_key: test
+aws_security_group: sg-abcdefghi12345678
+forge_pem_secret: forge-pem
+excluded_ec2s: ["*g.*", "gd.*", "*metal*", "g4ad*"]
+tags:
+  - Key: "Name"
+    Value: "{name}-{market}-{task}-{date}"
+  - Key: "Application"
+    Value: "{name}"
+  - Key: "User"
+    Value: "{user}"
+user_data:
+  single: single.sh
+  cluster:
+    master: cluster-master.sh
+    worker: cluster-worker.sh
+additional_config:
+  - name: pip
+    type: list
+    default: []
+    constraints: []
+    error: ""

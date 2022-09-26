@@ -1,0 +1,71 @@
+###
+# Project settings
+###
+[project]
+name = "cars-forge"
+description = "Create an on-demand/spot fleet of single or cluster EC2 instances."
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Nikhil Patel", email = "npatel@cars.com"}
+]
+keywords = [
+    "AWS",
+    "EC2",
+    "Spot",
+    "On-Demand",
+    "Spark",
+    "Cluster",
+    "Jupyter"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dynamic = ["version"]
+
+dependencies = [
+    "boto3~=1.19.0",
+    "pyyaml~=5.3.0",
+    "schema~=0.7.0",
+]
+[project.optional-dependencies]
+test = [
+    "pytest~=7.1.0",
+]
+
+[project.urls]
+homepage = "https://github.com/carsdotcom/cars-forge/"
+documentation = "https://carsdotcom.github.io/cars-forge/"
+changelog = "https://github.com/carsdotcom/cars-forge/blob/main/CHANGELOG.md"
+
+[project.scripts]
+forge = "forge.main:main"
+
+###
+# Build settings
+###
+[build-system]
+requires = ["hatchling>=1.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/forge"]
+
+[tool.hatch.version]
+path = "src/forge/__init__.py"

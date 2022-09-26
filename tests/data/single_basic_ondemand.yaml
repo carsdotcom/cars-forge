@@ -1,0 +1,9 @@
+# Forge required-only configs for single on-demand job
+name: test-single-basic-od
+service: single
+ram:
+  - [64]
+aws_role: test_role
+run_cmd: dummy.sh dev test
+market: on-demand
+ami: single_ami

@@ -1,0 +1,12 @@
+name: test-docker
+service: single
+ram:
+  - [16, 32]
+aws_role: test
+run_cmd: single_run.sh {ip} carsforge/jupyter-example:latest
+forge_env: example
+valid_time: 3
+rsync_path: single_run.sh
+destroy_after_success: true
+destroy_after_failure: true
+ami: single

@@ -1,0 +1,8 @@
+# Forge required-only configs for single job
+name: test-single-basic
+service: single
+ram:
+  - [64]
+aws_role: test_role
+run_cmd: dummy.sh dev test
+ami: single_ami

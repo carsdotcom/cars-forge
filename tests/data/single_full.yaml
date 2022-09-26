@@ -1,0 +1,18 @@
+# Forge full configs for single job
+name: test-single-full
+service: single
+ram:
+  - [64]
+aws_role: test_role
+run_cmd: dummy.sh dev test
+forge_env: dev
+cpu:
+  - [8]
+disk: 32
+valid_time: 3
+user_data: [/path/to/startup/script.sh]
+rsync_path: /path/to/dummy.sh
+gpu_flag: False
+market: spot
+log_level: info
+ami: single_ami
