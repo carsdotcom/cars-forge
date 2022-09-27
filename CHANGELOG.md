@@ -6,7 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+- **Version** - Use `bump2version` to manage project version.
+- **Dependencies** - Add `bump2version` as a dev dependency.
+
 ### Changed
+- **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
 
 
