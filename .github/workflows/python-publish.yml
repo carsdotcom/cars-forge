@@ -41,12 +41,20 @@ jobs:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
 
+    - name: Fetch current version
+      run: |
+        VER=$(awk '/^current_version/{print $NF}' .bumpversion.cfg)
+        echo "VERSION=$VER" >> $GITHUB_ENV
+
     - name: Build Release Notes from Changelog
-        # This script prints the version number as an env variable called `VERSION`
-        run: python .github/scripts/generate_rn.py >> $GITHUB_ENV
+      # Don't release beta versions on GitHub
+      if: contains(env.VERSION, 'b') != true
+      run: python .github/scripts/generate_rn.py
 
     - name: Release
       uses: softprops/action-gh-release@v1
+      # Don't release beta versions on GitHub
+      if: contains(env.VERSION, 'b') != true
       with:
         name: Version ${{ env.VERSION }}
         tag_name: v${{ env.VERSION }}

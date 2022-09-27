@@ -24,9 +24,5 @@ with open("CHANGELOG.md", "r", encoding="utf-8") as changelog:
         elif is_read and (line != ""):
             rn += line
 
-# Print version to stdout. This should be captured by a workflow step:
-# python generate_rn.py >> $GITHUB_ENV
-print(f"VERSION={version}")
-
 with open("release_notes.md", "w", encoding="utf-8") as release_notes:
     release_notes.write(rn)
