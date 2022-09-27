@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+- **GitHub** - Update action to build and publish package only when version is bumped.
+
+
+## [1.0.0] - 2022-09-27
+
 ### Added
 - **Initial commit** - Forge source code, unittests, docs, pyproject.toml, README.md, and LICENSE files.
 
