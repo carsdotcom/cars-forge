@@ -45,6 +45,9 @@ dependencies = [
 test = [
     "pytest~=7.1.0",
 ]
+dev = [
+    "bump2version~=1.0",
+]
 
 [project.urls]
 homepage = "https://github.com/carsdotcom/cars-forge/"
