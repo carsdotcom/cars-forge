@@ -42,7 +42,7 @@ def check_fleet_id(n, config):
         Filters=[
             {'Name': 'resource-type',
                 'Values': ['fleet']},
-            {'Name': 'value',
+            {'Name': 'tag:forge-name',
                 'Values': [n]}])
     fleet_id = []
     for i in response.get('Tags'):
@@ -85,7 +85,7 @@ def ec2_ip(n, config):
     running_instances = ec2.instances.filter(Filters=[{
         'Name': 'instance-state-name',
         'Values': ['running', 'stopped', 'stopping', 'pending']},
-        {'Name': 'tag:Name',
+        {'Name': 'tag:forge-name',
          'Values': [n]}])
 
     ec2s = []
