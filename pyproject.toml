@@ -6,7 +6,7 @@ name = "cars-forge"
 description = "Create an on-demand/spot fleet of single or cluster EC2 instances."
 readme = "README.md"
 requires-python = ">=3.7"
-license = {file = "LICENSE"}
+license = "Apache-2.0"
 authors = [
     {name = "Nikhil Patel", email = "npatel@cars.com"}
 ]
@@ -50,9 +50,9 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/carsdotcom/cars-forge/"
-documentation = "https://carsdotcom.github.io/cars-forge/"
-changelog = "https://github.com/carsdotcom/cars-forge/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/carsdotcom/cars-forge/"
+Documentation = "https://carsdotcom.github.io/cars-forge/"
+Changelog = "https://github.com/carsdotcom/cars-forge/blob/main/CHANGELOG.md"
 
 [project.scripts]
 forge = "forge.main:main"

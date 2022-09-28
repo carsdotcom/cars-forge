@@ -7,10 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Added
+- **gitignore** - Use a `.gitignore` file to prevent accidentally committing unneeded files.
 - **Version** - Use `bump2version` to manage project version.
 - **Dependencies** - Add `bump2version` as a dev dependency.
 
 ### Changed
+- **Metadata** - Fix License field and capitalize project urls.
 - **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
 
