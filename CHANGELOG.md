@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Metadata** - Fix License field and capitalize project urls.
 - **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
-
+- **Forge** - Added automatic tag `forge-name` to allow `Name` tag to be changed.
 
 ## [1.0.0] - 2022-09-27
 
