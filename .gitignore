@@ -1,0 +1,17 @@
+# Byte-compiled and optimized python files
+__pycache__/
+*.py[cod]
+
+# pytest cache
+.pytest_cache/
+
+# coverage report
+.coverage
+
+# macOS stuff
+.DS_Store
+
+# Build files
+*.egg-info/
+build/
+dist/
