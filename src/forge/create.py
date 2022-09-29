@@ -391,6 +391,7 @@ def create_template(n, config, task):
     access_vars = user_accessible_vars(config, market=market, task=task)
     tags = [{k: fmt.format(v, **access_vars) for k, v in inner.items()} for inner in tags] if tags else None
     tags = [inner for inner in tags if None not in inner.values()]
+    tags.append({'Key': 'forge-name', 'Value': n})
     specs = {'TagSpecifications': [{'ResourceType': 'instance', 'Tags': tags}]} if tags else {}
 
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
@@ -563,6 +564,9 @@ def create_fleet(n, config, task):
     fmt = FormatEmpty()
     access_vars = user_accessible_vars(config, market=market, task=task)
     tags = [{k: fmt.format(v, **access_vars) for k, v in inner.items()} for inner in tags] if tags else None
+    tags = [inner for inner in tags if None not in inner.values()]
+    tags.append({'Key': 'forge-name', 'Value': n})
+
     kwargs = {
         'OnDemandOptions': {
             'AllocationStrategy': 'lowest-price'

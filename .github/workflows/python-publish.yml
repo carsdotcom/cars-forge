@@ -12,9 +12,6 @@ on:
   # Allows running this workflow manually from the Actions tab
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -47,14 +44,10 @@ jobs:
         echo "VERSION=$VER" >> $GITHUB_ENV
 
     - name: Build Release Notes from Changelog
-      # Don't release beta versions on GitHub
-      if: contains(env.VERSION, 'b') != true
       run: python .github/scripts/generate_rn.py
 
     - name: Release
       uses: softprops/action-gh-release@v1
-      # Don't release beta versions on GitHub
-      if: contains(env.VERSION, 'b') != true
       with:
         name: Version ${{ env.VERSION }}
         tag_name: v${{ env.VERSION }}

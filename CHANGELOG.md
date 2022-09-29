@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Added
+- **GitHub** - Workflow to run unittests on every PR and push to main.
+
+
+## [1.0.1] - 2022-09-28
+
+### Added
 - **gitignore** - Use a `.gitignore` file to prevent accidentally committing unneeded files.
 - **Version** - Use `bump2version` to manage project version.
 - **Dependencies** - Add `bump2version` as a dev dependency.
@@ -15,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Metadata** - Fix License field and capitalize project urls.
 - **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
+- **Forge** - Added automatic tag `forge-name` to allow `Name` tag to be changed.
 
 
 ## [1.0.0] - 2022-09-27
@@ -22,5 +29,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - **Initial commit** - Forge source code, unittests, docs, pyproject.toml, README.md, and LICENSE files.
 
-[unreleased]: https://github.com/carsdotcom/cars-forge/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/carsdotcom/cars-forge/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/carsdotcom/cars-forge/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/carsdotcom/cars-forge/releases/tag/v1.0.0
