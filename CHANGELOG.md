@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1]
+## [Unreleased]
+
+### Added
+- **GitHub** - Workflow to run unittests on every PR and push to main.
+
+
+## [1.0.1] - 2022-09-28
 
 ### Added
 - **gitignore** - Use a `.gitignore` file to prevent accidentally committing unneeded files.
@@ -16,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
 - **Forge** - Added automatic tag `forge-name` to allow `Name` tag to be changed.
+
 
 ## [1.0.0] - 2022-09-27
 
