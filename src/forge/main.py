@@ -5,7 +5,7 @@ import sys
 import yaml
 
 from . import __version__, DEFAULT_ARG_VALS, REQUIRED_ARGS
-from .common import check_keys, set_config_dir, normalize_config
+from .common import check_keys, set_config_dir, normalize_config, parse_additional_config
 from .engine import cli_engine, engine
 from .create import create, cli_create
 from .destroy import cli_destroy, destroy
@@ -143,7 +143,7 @@ def main():
             with open(f'{args["config_dir"]}/{args["forge_env"]}.yaml') as handle:
                 env_config = check_env_yaml(yaml.safe_load(handle))
                 if env_config.get('additional_config'):
-                    env_config = normalize_config(env_config, env_config.pop('additional_config'))
+                    env_config = parse_additional_config(env_config, env_config.pop('additional_config'))
                 env_config = normalize_config(env_config)
                 check_keys(args.get('region') or env_config['region'], env_config.get('aws_profile'))
                 env_config = {k: v for k, v in env_config.items() if v}
