@@ -59,7 +59,7 @@ def test_normalize_config(config, expected):
 ])
 def test_parse_additional_config(config, additional_config, expected):
     """Test the normalization of config options."""
-    actual = common.normalize_config(config, additional_config)
+    actual = common.parse_additional_config(config, additional_config)
     if config.get('ratio'):
         assert config['ratio'] == common.DEFAULT_ARG_VALS['default_ratio']
 
