@@ -37,21 +37,6 @@ def test_normalize_config(config, expected):
 
 @mock.patch.dict('forge.common.DEFAULT_ARG_VALS', TEST_DEFAULT_ARG_VALS)
 @pytest.mark.parametrize('config,additional_config,expected', [
-    # Overriding default ratio
-    ({'aws_az': 'us-east-1a', 'ratio': [6, 8]},
-     None,
-     {'aws_az': 'us-east-1a', 'region': 'us-east-1'}),
-    # Regular config
-    ({'ram': ['8', [256, 512]], 'cpu': ['1, 2', '7,8'], 'aws_az': 'testing',
-      'market': 'on-demand, spot'},
-     None,
-     {'ram': [[8], [256, 512]], 'cpu': [[1, 2], [7, 8]], 'aws_az': 'testing',
-      'region': 'testin', 'market': ['on-demand', 'spot'], 'ratio': None}),
-    # No-market config
-    ({'ram': ['8', [256, 512]], 'cpu': ['1, 2', '7,8']},
-     None,
-     {'ram': [[8], [256, 512]], 'cpu': [[1, 2], [7, 8]], 'ratio': None}),
-    # only additional configs
     ({},
      [{'name': 'pip', 'type': 'list', 'default': [], 'constraints': []},
       {'name': 'version', 'type': 'float', 'default': 2.3, 'constraints': [2.3, 3.0, 3.1]}],
