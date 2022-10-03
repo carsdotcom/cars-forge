@@ -11,23 +11,25 @@ This step should be needed only once per environment, usually done by someone on
 ### How to Run
 
 1. `forge configure`
-	- Refer to [environmental_yaml](environmental_yaml.md) for more information on each parameter
-	- After completion, the config directory will be given. 
-		- E.g.:
-		```bash
-		$ forge configure
-		Environment Name?: test
-		AWS profile?: aws-test
-		AWS availability zone?: us-east-1a
-		EC2 AMIs?: {'single': ['ami-05fa00d4c63e32376', 30, '/dev/xvda'], 'cluster': ['ami-05fa00d4c63e32376', 30, '/dev/xvda']}
-		AWS Subnet?: subnet-123abc456def789gh
-		AWS key used with EC2?: test
-		AWS Security Group?: sg-abcdefghi12345678
-		Name of Secret for pem key?: forge-pem
-		EC2s to exclude from spot fleet (Optional): *g.*, gd.*, *metal*
-		Tags applied to EC2 and fleet (Optional): [{'Key': 'Name', 'Value': 'n'}, {'Key': 'Application', 'Value': 'name'}, {'Key': 'User', 'Value': 'user'}]
-		The default user_data files. Files are loaded to the config folder (Optional): {'single': 'single.sh', 'cluster': {'master': 'cluster-master.sh', 'worker': 'cluster-worker.sh'}}
-		Additional configs needed for your application (Optional): [{'name': 'pip', 'type': 'list', 'default': [], 'constraints': [], 'error': ''}]
-		Wed Sep 21 13:30:06 2022 -- INFO -- Config directory for /Users/test/envs/forge/lib/python3.6/site-packages/forge/config/test does no exist. Making directory.
-		Wed Sep 21 13:30:06 2022 -- INFO -- Created test config file.
-		```
+
+- Refer to [environmental_yaml](environmental_yaml.md) for more information on each parameter
+- After completion, the config directory will be given.
+- E.g.:
+
+  ```bash
+  $ forge configure
+  Environment Name?: test
+  AWS profile?: aws-test
+  AWS availability zone?: us-east-1a
+  EC2 AMIs?: {'single': ['ami-05fa00d4c63e32376', 30, '/dev/xvda'], 'cluster': ['ami-05fa00d4c63e32376', 30, '/dev/xvda']}
+  AWS Subnet?: subnet-123abc456def789gh
+  AWS key used with EC2?: test
+  AWS Security Group?: sg-abcdefghi12345678
+  Name of Secret for pem key?: forge-pem
+  EC2s to exclude from spot fleet (Optional): *g.*, gd.*, *metal*
+  Tags applied to EC2 and fleet (Optional): [{'Key': 'Name', 'Value': 'n'}, {'Key': 'Application', 'Value': 'name'}, {'Key': 'User', 'Value': 'user'}]
+  The default user_data files. Files are loaded to the config folder (Optional): {'single': 'single.sh', 'cluster': {'master': 'cluster-master.sh', 'worker': 'cluster-worker.sh'}}
+  Additional configs needed for your application (Optional): [{'name': 'pip', 'type': 'list', 'default': [], 'constraints': [], 'error': ''}]
+  Wed Sep 21 13:30:06 2022 -- INFO -- Config directory for /Users/test/envs/forge/lib/python3.6/site-packages/forge/config/test does no exist. Making directory.
+  Wed Sep 21 13:30:06 2022 -- INFO -- Created test config file.
+  ```
