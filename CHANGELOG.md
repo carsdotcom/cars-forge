@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - **GitHub** - Workflow to run unittests on every PR and push to main.
 
+### Changed
+- **Readme** - Added new badges to the Readme
 
 ## [1.0.1] - 2022-09-28
 
