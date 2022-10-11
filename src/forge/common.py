@@ -291,10 +291,9 @@ def _parse_list(option):
     return option
 
 
-def normalize_config(config, additional_config=None):
+def normalize_config(config):
     """normalizes the Forge configuration data
 
-    If additional_config is present, normalize_config will purely parse additional_config and add it to config.
     If it detects an environmental config data (determined by a lack of ram or cpu data), it processes the ratio and
     updates DEFAULT_ARG_VALS['ratio']. If it detects a user configuration option, it will parse the ram, cpu, ration,
     and market data so that it conforms to Forge's expectation. In either scenario, if it detects aws_az it will update
@@ -304,8 +303,6 @@ def normalize_config(config, additional_config=None):
     ----------
     config : dict
         Forge configuration data
-    additional_config : dict
-        Additional Forge use configuration options
 
     Notes
     -----
@@ -319,12 +316,6 @@ def normalize_config(config, additional_config=None):
         The updated Forge configuration data
     """
     config = dict(config)
-
-    if additional_config:
-        additional_config = {x['name']: x['default'] for x in additional_config if x['default']}
-        config = {**config, **additional_config}
-
-        return config
 
     if config.get('aws_az'):
         config['region'] = config['aws_az'][:-1]
@@ -343,6 +334,29 @@ def normalize_config(config, additional_config=None):
         market = config.get('market')
         if market and isinstance(market, str):
             config['market'] = list(map(str.strip, market.split(',')))
+
+    return config
+
+
+def parse_additional_config(config, additional_config):
+    """parse additional configuration data
+
+    Parameters
+    ----------
+    config : dict
+        Forge configuration data
+    additional_config : dict
+        Additional Forge use configuration options
+
+    Returns
+    -------
+    dict
+        The additional Forge configuration data
+    """
+    config = dict(config)
+
+    additional_config = {x['name']: x['default'] for x in additional_config if x['default']}
+    config = {**config, **additional_config}
 
     return config
 
