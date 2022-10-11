@@ -1,5 +1,11 @@
-<p align="center"><img src="docs/logo.jpg"></p>
+<p align="center"><img src="https://github.com/carsdotcom/cars-forge/blob/main/docs/logo.jpg?raw=true"></p>
 
+[![GitHub license](https://img.shields.io/github/license/carsdotcom/cars-forge?color=navy&label=License&logo=License&style=flat-square)](https://github.com/carsdotcom/cars-forge/blob/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/cars-forge?color=navy&style=flat-square)](https://pypi.org/project/cars-forge/)
+![hacktoberfest](https://img.shields.io/github/issues/carsdotcom/cars-forge?color=orange&label=Hacktoberfest%202022&style=flat-square&?labelColor=black)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/cars-forge?color=navy&style=flat-square)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/carsdotcom/cars-forge/Publish%20Package/main?color=navy&style=flat-square)
+![GitHub contributors](https://img.shields.io/github/contributors/carsdotcom/cars-forge?color=navy&style=flat-square)
 ---
 
 ## About
