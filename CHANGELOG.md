@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
 - **Forge** - Added automatic tag `forge-name` to allow `Name` tag to be changed.
-
+- **Forge** - Added error to show when SSH credentials are invalid
 
 ## [1.0.0] - 2022-09-27
 
