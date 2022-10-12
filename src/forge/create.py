@@ -4,7 +4,6 @@ import logging
 import sys
 import os
 import time
-import json
 from datetime import datetime, timedelta
 
 import boto3
@@ -12,7 +11,8 @@ from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_job_args, add_env_args, add_general_args
-from .common import ec2_ip, get_regions, destroy_hook, set_boto_session, user_accessible_vars, FormatEmpty
+from .common import (ec2_ip, destroy_hook, set_boto_session,
+                     user_accessible_vars, FormatEmpty, get_ec2_pricing)
 from .destroy import destroy
 
 logger = logging.getLogger(__name__)
@@ -251,59 +251,32 @@ def pricing(n, config, fleet_id):
 
     set_boto_session(region, profile)
 
-    az = config.get('aws_az')
     region = config.get('region')
     ec2_client = boto3.client('ec2')
-    pricing_client = boto3.client('pricing', region_name='us-east-1')
-    # get list of EC2s
-    ec2_list = []
+
+    # Get list of active fleet EC2s
+    fleet_types = []
     fleet_request_configs = ec2_client.describe_fleet_instances(FleetId=fleet_id)
-    active_instances_list = fleet_request_configs.get('ActiveInstances')
-    if active_instances_list is None:  # Consider changing to if not active_instances_list:
-        return None
+    for i in fleet_request_configs.get('ActiveInstances', []):
+        fleet_types.append(i['InstanceType'])
 
-    for i in active_instances_list:
-        ec2_list.append(i['InstanceType'])
+    if not fleet_types:
+        return
 
-    # on-demand pricing
-    long_region = get_regions()[region]
-    op_sys = 'Linux'
+    # Get on-demand prices regardless of market
     total_on_demand_cost = 0
-    for ec2 in ec2_list:
-        filters = [
-            {'Field': 'tenancy', 'Value': 'shared', 'Type': 'TERM_MATCH'},
-            {'Field': 'operatingSystem', 'Value': op_sys, 'Type': 'TERM_MATCH'},
-            {'Field': 'preInstalledSw', 'Value': 'NA', 'Type': 'TERM_MATCH'},
-            {'Field': 'location', 'Value': long_region, 'Type': 'TERM_MATCH'},
-            {'Field': 'capacitystatus', 'Value': 'Used', 'Type': 'TERM_MATCH'},
-            {'Field': 'instanceType', 'Value': ec2, 'Type': 'TERM_MATCH'}
-        ]
-        response = pricing_client.get_products(ServiceCode='AmazonEC2', Filters=filters)
-        results = response['PriceList']
-        product = json.loads(results[0])
-        od = product['terms']['OnDemand']
-        price_details = list(od.values())[0]['priceDimensions']
-        on_demand_price = list(price_details.values())[0]['pricePerUnit']['USD']
-        on_demand_price = float(on_demand_price)
-        total_on_demand_cost = total_on_demand_cost + on_demand_price
-    total_on_demand_cost = round(total_on_demand_cost, 2)
-    # get spot pricing
+    for ec2_type in fleet_types:
+        total_on_demand_cost += get_ec2_pricing(ec2_type, 'on-demand', config)
+
+    # If using spot instances get spot pricing to show savings over on-demand
     if market == 'spot':
         total_spot_cost = 0
-        for ec2 in ec2_list:
-            describe_result = ec2_client.describe_spot_price_history(
-                StartTime=datetime.utcnow(),
-                ProductDescriptions=['Linux/UNIX (Amazon VPC)'],
-                AvailabilityZone=az,
-                InstanceTypes=[ec2]
-            )
-            spot_price = float(describe_result['SpotPriceHistory'][0]['SpotPrice'])
-            total_spot_cost = total_spot_cost + spot_price
-        total_spot_cost = round(total_spot_cost, 2)
-        saving = round(100 * (1 - (total_spot_cost / total_on_demand_cost)), 2)
-        logger.info(f'Hourly price is ${total_spot_cost}. Savings of {saving}%')
+        for ec2_type in fleet_types:
+            total_spot_cost += get_ec2_pricing(ec2_type, market, config)
+        saving = 100 * (1 - (total_spot_cost / total_on_demand_cost))
+        logger.info('Hourly price is $%.2f. Savings of %.2f%%', total_spot_cost, saving)
     elif market == 'on-demand':
-        logger.info(f'Hourly price is ${total_on_demand_cost}')
+        logger.info('Hourly price is $%.2f', total_on_demand_cost)
 
 
 def create_template(n, config, task):

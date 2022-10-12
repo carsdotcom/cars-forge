@@ -1,4 +1,6 @@
 """Tests for the common functions of Forge."""
+import json
+from datetime import datetime
 from unittest import mock
 
 import pytest
@@ -87,3 +89,67 @@ def test_user_accessible_vars(config, kwargs, expected):
     """Test creating the dict of user-accessible variables."""
     actual = common.user_accessible_vars(config, **kwargs)
     assert actual == expected
+
+
+@mock.patch('forge.common.boto3')
+@mock.patch('forge.common.datetime')
+def test_get_ec2_pricing_spot(mock_dt, mock_boto):
+    """Test getting spot EC2 hourly pricing."""
+    exp_price = 0.123
+    response = {'SpotPriceHistory': [{'SpotPrice': str(exp_price)}]}
+    mock_client = mock_boto.client.return_value = mock.Mock()
+    mock_describe = mock_client.describe_spot_price_history
+    mock_describe.return_value = response
+    now = datetime(2022, 1, 1, 12, 0, 0)
+    mock_dt.utcnow.return_value = now
+
+    config = {'aws_az': 'us-east-1a', 'region': 'us-east-1'}
+    ec2_type = 'r5.large'
+    act_price = common.get_ec2_pricing(ec2_type, 'spot', config)
+    assert act_price == exp_price
+
+    mock_boto.client.assert_called_once_with('ec2')
+    mock_dt.utcnow.assert_called_once()
+    mock_describe.assert_called_once_with(
+        StartTime=now,
+        ProductDescriptions=['Linux/UNIX (Amazon VPC)'],
+        AvailabilityZone=config['aws_az'],
+        InstanceTypes=[ec2_type]
+    )
+
+
+@mock.patch('forge.common.boto3')
+@mock.patch('forge.common.get_regions')
+def test_get_ec2_pricing_ondemand(mock_regions, mock_boto):
+    """Test getting on-demand EC2 hourly pricing."""
+    exp_price = 0.123
+    region = 'us-east-1'
+    long_region = 'US East (N. Virginia)'
+    response = {'PriceList': [json.dumps(
+        {"terms": {"OnDemand": {
+            "XYZ": {"priceDimensions": {"XYZ.ABC": {"pricePerUnit": {"USD": "0.1230000000"}}}}
+        }}}
+    )]}
+
+    mock_client = mock_boto.client.return_value = mock.Mock()
+    mock_products = mock_client.get_products
+    mock_products.return_value = response
+    mock_regions.return_value = {region: long_region}
+
+    config = {'region': region}
+    ec2_type = 'r5.large'
+    act_price = common.get_ec2_pricing(ec2_type, 'on-demand', config)
+    assert act_price == exp_price
+
+    mock_boto.client.assert_called_once_with('pricing', region_name=region)
+    mock_regions.assert_called_once()
+    mock_products.assert_called_once_with(
+        ServiceCode='AmazonEC2', Filters=[
+            {'Field': 'tenancy', 'Value': 'shared', 'Type': 'TERM_MATCH'},
+            {'Field': 'operatingSystem', 'Value': 'Linux', 'Type': 'TERM_MATCH'},
+            {'Field': 'preInstalledSw', 'Value': 'NA', 'Type': 'TERM_MATCH'},
+            {'Field': 'location', 'Value': long_region, 'Type': 'TERM_MATCH'},
+            {'Field': 'capacitystatus', 'Value': 'Used', 'Type': 'TERM_MATCH'},
+            {'Field': 'instanceType', 'Value': ec2_type, 'Type': 'TERM_MATCH'}
+        ]
+    )
