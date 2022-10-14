@@ -68,7 +68,7 @@ def ssh(config):
             subprocess.run(shlex.split(cmd), check=True, universal_newlines=True)
         except subprocess.CalledProcessError as exc:
             if exc.returncode == 142:
-                logger.error('Missing proper SSH credentials to connect. Please check your user_data and AMI.')
+                logger.error('Missing proper SSH credentials to connect. Please check your user_data and/or AMI.')
             else:
                 logger.error('SSH failed with error code %d: %s', exc.returncode, exc.cmd)
             sys.exit(exc.returncode)
