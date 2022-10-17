@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - **Common** - Move EC2 pricing calls to single function in `common.py`.
 - **Readme** - Added new badges to the Readme
+- **Forge** - Added error to show when SSH credentials are invalid
 
 
 ## [1.0.1] - 2022-09-28
@@ -26,7 +27,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
 - **Forge** - Added automatic tag `forge-name` to allow `Name` tag to be changed.
-
 
 ## [1.0.0] - 2022-09-27
 
