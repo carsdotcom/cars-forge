@@ -44,6 +44,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest~=7.1.0",
+    "pytest-cov~=4.0"
 ]
 dev = [
     "bump2version~=1.0",
@@ -72,3 +73,10 @@ packages = ["src/forge"]
 
 [tool.hatch.version]
 path = "src/forge/__init__.py"
+
+###
+# Pytest settings
+###
+[tool.pytest.ini_options]
+# Show coverage report with missing lines when running `pytest`
+addopts = "--cov=forge --cov-report term-missing"
