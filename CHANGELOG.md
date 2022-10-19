@@ -7,12 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Added
+- **Tests** - Test for `ssh.py` module.
 - **GitHub** - Workflow to run unittests on every PR and push to main.
 
 ### Changed
+- **SSH** - Add error to show when SSH credentials are invalid.
+- **Dependencies** - Add `coverage` as a test dependency.
+- **Readme** - Add new badges to the Readme.
 - **Common** - Move EC2 pricing calls to single function in `common.py`.
-- **Readme** - Added new badges to the Readme
-- **Forge** - Added error to show when SSH credentials are invalid
 
 
 ## [1.0.1] - 2022-09-28
