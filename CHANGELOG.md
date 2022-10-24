@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ### Added
-- **Tests** - Test for `ssh.py` module.
+- **Tests** - Test for `ssh.py` and `rsync.py` module.
 - **GitHub** - Workflow to run unittests on every PR and push to main.
 
 ### Changed
