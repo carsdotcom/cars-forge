@@ -64,17 +64,20 @@ def rsync(config):
         with key_file(pem_secret, region, profile) as pem_path:
             if os.path.isdir(rsync_loc):
                 logger.info('Copying folder %s to EC2.', rsync_loc)
-                c = f'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i {pem_path}" {rsync_loc}/* root@{ip}:/root/'
+                rsync_loc += '/*'
             elif os.path.isfile(rsync_loc):
                 logger.info('Copying file %s to EC2.', rsync_loc)
-                c = f'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i {pem_path}" {rsync_loc} root@{ip}:/root/'
             else:
                 logger.error("File or folder from 'rsync_path' parameter not found: %s", rsync_loc)
                 sys.exit(1)
 
+            cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+            cmd +=f' -i {pem_path}" {rsync_loc} root@{ip}:/root/'
+
             try:
                 output = subprocess.check_output(
-                    c, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+                    cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True
+                )
             except subprocess.CalledProcessError as exc:
                 logger.error('Rsync failed:\n%s', exc.output)
             else:
