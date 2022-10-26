@@ -7,8 +7,6 @@ import pytest
 
 from forge import yaml_loader
 
-from src.forge.yaml_loader import non_negative_list_list_ints
-
 TEST_DIR = os.path.dirname(os.path.realpath(__file__))
 FORGE_DIR = os.path.dirname(os.path.realpath(yaml_loader.__file__))
 
@@ -226,7 +224,7 @@ def test_load_config_errors(mock_pass, args, exp_error, caplog):
 )
 def test_non_negative_list_failures(raw_x):
     with pytest.raises(ValueError):
-        non_negative_list_list_ints(raw_x)
+        yaml_loader.non_negative_list_list_ints(raw_x)
 
 
 @pytest.mark.parametrize(
@@ -236,5 +234,5 @@ def test_non_negative_list_failures(raw_x):
     ]
 )
 def test_non_negative_list_pass(raw_x):
-    result = non_negative_list_list_ints(raw_x)
+    result = yaml_loader.non_negative_list_list_ints(raw_x)
     assert result == raw_x
