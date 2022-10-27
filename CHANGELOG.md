@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+
+## [1.0.2] - 2022-10-27
+
 ### Added
 - **Tests** - Test for `ssh.py` and `rsync.py` module.
 - **GitHub** - Workflow to run unittests on every PR and push to main.
@@ -36,5 +39,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Initial commit** - Forge source code, unittests, docs, pyproject.toml, README.md, and LICENSE files.
 
 [unreleased]: https://github.com/carsdotcom/cars-forge/compare/v1.0.1...HEAD
+[1.0.2]: https://github.com/carsdotcom/cars-forge/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/carsdotcom/cars-forge/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/carsdotcom/cars-forge/releases/tag/v1.0.0
