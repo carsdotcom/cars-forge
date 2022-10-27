@@ -42,6 +42,7 @@ def test_run_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, serv
     mock_ec2_ip.assert_called_once_with(
         f"{config['name']}-spot-{out}-{config['date']}", config
     )
+    mock_get_ip.assert_called_once_with(ec2_details, ('running',))
     mock_key_file.assert_called_once_with(
         config['forge_pem_secret'], config['region'], config['aws_profile']
     )

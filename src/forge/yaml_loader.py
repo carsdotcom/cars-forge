@@ -9,7 +9,7 @@ from schema import Schema, And, Or, Use, Optional, SchemaError
 
 from . import DEFAULT_ARG_VALS, ADDITIONAL_KEYS
 from .configure import check_env_yaml
-from .common import normalize_config, set_config_dir, check_keys
+from .common import normalize_config, set_config_dir, check_keys, parse_additional_config
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +229,7 @@ def load_config(args):
     env = args['forge_env'] or user_config.get('forge_env')
 
     env_config['config_dir'] = config_dir
-    env_config = normalize_config(env_config, additional_config)
+    env_config = parse_additional_config(env_config, additional_config)
 
     logger.debug('Full user config options: %s', user_config)
 

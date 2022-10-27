@@ -7,6 +7,7 @@ import string
 import tempfile
 import sys
 import os
+from datetime import datetime
 from numbers import Number
 
 import boto3
@@ -290,10 +291,9 @@ def _parse_list(option):
     return option
 
 
-def normalize_config(config, additional_config=None):
+def normalize_config(config):
     """normalizes the Forge configuration data
 
-    If additional_config is present, normalize_config will purely parse additional_config and add it to config.
     If it detects an environmental config data (determined by a lack of ram or cpu data), it processes the ratio and
     updates DEFAULT_ARG_VALS['ratio']. If it detects a user configuration option, it will parse the ram, cpu, ration,
     and market data so that it conforms to Forge's expectation. In either scenario, if it detects aws_az it will update
@@ -303,8 +303,6 @@ def normalize_config(config, additional_config=None):
     ----------
     config : dict
         Forge configuration data
-    additional_config : dict
-        Additional Forge use configuration options
 
     Notes
     -----
@@ -318,12 +316,6 @@ def normalize_config(config, additional_config=None):
         The updated Forge configuration data
     """
     config = dict(config)
-
-    if additional_config:
-        additional_config = {x['name']: x['default'] for x in additional_config if x['default']}
-        config = {**config, **additional_config}
-
-        return config
 
     if config.get('aws_az'):
         config['region'] = config['aws_az'][:-1]
@@ -342,6 +334,29 @@ def normalize_config(config, additional_config=None):
         market = config.get('market')
         if market and isinstance(market, str):
             config['market'] = list(map(str.strip, market.split(',')))
+
+    return config
+
+
+def parse_additional_config(config, additional_config):
+    """parse additional configuration data
+
+    Parameters
+    ----------
+    config : dict
+        Forge configuration data
+    additional_config : dict
+        Additional Forge use configuration options
+
+    Returns
+    -------
+    dict
+        The additional Forge configuration data
+    """
+    config = dict(config)
+
+    additional_config = {x['name']: x['default'] for x in additional_config if x['default']}
+    config = {**config, **additional_config}
 
     return config
 
@@ -458,3 +473,59 @@ def user_accessible_vars(config, **kwargs):
     user_vars.update({k: v for k, v in config.items() if k in ADDITIONAL_KEYS})
 
     return user_vars
+
+
+def get_ec2_pricing(ec2_type, market, config):
+    """Get the hourly spot or on-demand price of given EC2 instance type.
+
+    Parameters
+    ----------
+    ec2_type : str
+        EC2 type to get pricing for.
+    market : str
+        Whether EC2 is a `'spot'` or `'on-demand'` instance.
+    config : dict
+        Forge configuration data.
+
+    Returns
+    -------
+    float
+        Hourly price of given EC2 type in given market.
+    """
+    region = config.get('region')
+    az = config.get('aws_az')
+
+    if market == 'spot':
+        client = boto3.client('ec2')
+        response = client.describe_spot_price_history(
+            StartTime=datetime.utcnow(),
+            ProductDescriptions=['Linux/UNIX (Amazon VPC)'],
+            AvailabilityZone=az,
+            InstanceTypes=[ec2_type]
+        )
+        price = float(response['SpotPriceHistory'][0]['SpotPrice'])
+
+    elif market == 'on-demand':
+        client = boto3.client('pricing', region_name='us-east-1')
+
+        long_region = get_regions()[region]
+        op_sys = 'Linux'
+
+        filters = [
+            {'Field': 'tenancy', 'Value': 'shared', 'Type': 'TERM_MATCH'},
+            {'Field': 'operatingSystem', 'Value': op_sys, 'Type': 'TERM_MATCH'},
+            {'Field': 'preInstalledSw', 'Value': 'NA', 'Type': 'TERM_MATCH'},
+            {'Field': 'location', 'Value': long_region, 'Type': 'TERM_MATCH'},
+            {'Field': 'capacitystatus', 'Value': 'Used', 'Type': 'TERM_MATCH'},
+            {'Field': 'instanceType', 'Value': ec2_type, 'Type': 'TERM_MATCH'}
+        ]
+        response = client.get_products(ServiceCode='AmazonEC2', Filters=filters)
+
+        results = response['PriceList']
+        product = json.loads(results[0])
+        od = product['terms']['OnDemand']
+        price_details = list(od.values())[0]['priceDimensions']
+        price = list(price_details.values())[0]['pricePerUnit']['USD']
+        price = float(price)
+
+    return price
