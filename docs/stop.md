@@ -8,20 +8,24 @@ Forge stop will stop an on-demand instances. The instance itself will no longer 
 
 ### How to Run
 
-1. `forge stop` 
-	- **ALL** the parameters must be the same as when forge create was ran
-	- A yaml file with all the required parameters can be provided
-	- Each yaml parameter can be over written at run time.
-	- E.g. `forge stop --yaml /home/docker.yaml --market on-demand`
-2. Works only on on-demand instances 
+1. `forge stop`
+
+- **ALL** the parameters must be the same as when forge create was ran
+- A yaml file with all the required parameters can be provided
+- Each yaml parameter can be over written at run time.
+- E.g. `forge stop --yaml /home/docker.yaml --market on-demand`
+
+2. Works only on on-demand instances
 
 ### Parameters
 
-#### Required 
+#### Required
+
 1. `name`
 2. `service`
 3. `forge_env`
 
-#### Optional 
+#### Optional
+
 1. `market`
 2. `date`

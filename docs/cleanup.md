@@ -12,5 +12,6 @@ Forge cleanup will delete all the old [launch templates](https://docs.aws.amazon
 
 ### Parameters
 
-#### Required 
+#### Required
+
 1. `forge_env`

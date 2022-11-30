@@ -30,4 +30,4 @@ This step should be needed only once per environment, usually done by someone on
 		Additional configs needed for your application (Optional): [{'name': 'pip', 'type': 'list', 'default': [], 'constraints': [], 'error': ''}]
 		Wed Sep 21 13:30:06 2022 -- INFO -- Config directory for /Users/test/envs/forge/lib/python3.6/site-packages/forge/config/test does no exist. Making directory.
 		Wed Sep 21 13:30:06 2022 -- INFO -- Created test config file.
-		```
+  ```
