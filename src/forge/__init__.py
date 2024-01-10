@@ -11,7 +11,8 @@ DEFAULT_ARG_VALS = {
     'destroy_after_failure': True,
     'default_ratio': [8, 8],
     'valid_time': 8,
-    'ec2_max': 768
+    'ec2_max': 768,
+    'spot_strategy': 'price-capacity-optimized'
 }
 
 # Required arguments for each Forge job
