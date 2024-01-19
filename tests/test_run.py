@@ -72,6 +72,7 @@ def test_run_error(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, caplog
         'aws_profile': 'dev',
         'forge_env': 'test',
         'run_cmd': 'dummy.sh dev test',
+        'job': 'run',
     }
     expected_cmd = [
         'ssh', '-t', '-o', 'UserKnownHostsFile=/dev/null',  '-o',

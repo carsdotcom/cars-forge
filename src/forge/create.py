@@ -11,8 +11,7 @@ from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_job_args, add_env_args, add_general_args
-from .common import (ec2_ip, destroy_hook, set_boto_session,
-                     user_accessible_vars, FormatEmpty, get_ec2_pricing)
+from .common import ec2_ip, destroy_hook, set_boto_session, user_accessible_vars, FormatEmpty, get_ec2_pricing, exit_callback
 from .destroy import destroy
 
 logger = logging.getLogger(__name__)
@@ -177,7 +176,7 @@ def create_status(n, request, config):
                     destroy(config)
                 error_details = get_fleet_error(client, fleet_id, create_time)
                 logger.error('Last status details: %s', error_details)
-                sys.exit(1)
+                exit_callback(config, exit=True)
             time.sleep(10)
             t += 10
             time_without_spot += 10
@@ -198,7 +197,7 @@ def create_status(n, request, config):
             logger.error('The EC2 spot instance failed to start, please try again.')
             if destroy_flag:
                 destroy(config)
-            sys.exit(1)
+            exit_callback(config, exit=True)
         logger.info('Finding EC2... - %ds elapsed', t)
         fleet_request_configs = client.describe_fleet_instances(FleetId=fleet_id)
         active_instances_list = fleet_request_configs.get('ActiveInstances')
@@ -207,6 +206,7 @@ def create_status(n, request, config):
         list_len = len(ec2_id_list)
 
     logger.debug('EC2 list is: %s', ec2_id_list)
+    config['ec2_id_list'] = ec2_id_list
     time_without_instance = 0
     for s in ec2_id_list:
         status = 'initializing'
@@ -222,12 +222,12 @@ def create_status(n, request, config):
                     logger.error('The EC2 spot instance failed to start, please try again.')
                     if destroy_flag:
                         destroy(config)
-                    sys.exit(1)
+                    exit_callback(config, exit=True)
             elif status not in {'initializing', 'ok'}:
                 logger.error('Could not start instance. Last EC2 status: %s', status)
                 if destroy_flag:
                     destroy(config)
-                sys.exit(1)
+                exit_callback(config, exit=True)
     logger.info('EC2 initialized.')
     pricing(n, config, fleet_id)
 
