@@ -6,7 +6,7 @@ import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
-from .common import ec2_ip, key_file, get_ip
+from .common import ec2_ip, key_file, get_ip, exit_callback
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,7 @@ def rsync(config):
                 )
             except subprocess.CalledProcessError as exc:
                 logger.error('Rsync failed:\n%s', exc.output)
+                exit_callback(config)
             else:
                 logger.info('Rsync successful:\n%s', output)
 

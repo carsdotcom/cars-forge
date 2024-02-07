@@ -5,7 +5,7 @@ import os
 import sys
 
 import yaml
-from schema import Schema, And, Optional, SchemaError
+from schema import Schema, And, Optional, SchemaError, Use
 
 from .common import set_config_dir
 
@@ -62,7 +62,9 @@ def check_env_yaml(env_yaml):
         Optional('tags'): And(list, len, error="Invalid AWS tags"),
         Optional('excluded_ec2s'): And(list),
         Optional('additional_config'): And(list),
-        Optional('ec2_max'): And(int)
+        Optional('ec2_max'): And(int),
+        Optional('on_demand_failover'): And(bool),
+        Optional('spot_retries'): And(Use(int), lambda x: x > 0),
     })
     try:
         validated = schema.validate(env_yaml)

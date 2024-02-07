@@ -5,8 +5,9 @@ import subprocess
 import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
+from .exceptions import ExitHandlerException
 from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
-from .common import ec2_ip, key_file, get_ip, destroy_hook, user_accessible_vars, FormatEmpty
+from .common import ec2_ip, key_file, get_ip, destroy_hook, user_accessible_vars, FormatEmpty, exit_callback
 from .destroy import destroy
 
 logger = logging.getLogger(__name__)
@@ -127,10 +128,13 @@ def run(config):
                     raise ValueError('Run command unsuccessful, ending attempts.')
         except ValueError as e:
             logger.error('Run command raised error: %s', e)
-            if destroy_flag:
-                logger.info('destroy_after_failure parameter True, running forge destroy...')
-                destroy(config)
-
-            break
+            try:
+                exit_callback(config)
+            except ExitHandlerException as exc:
+                raise
+            finally:
+                if destroy_flag:
+                    logger.info('destroy_after_failure parameter True, running forge destroy...')
+                    destroy(config)
 
     return rval

@@ -14,6 +14,7 @@ import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from . import DEFAULT_ARG_VALS, ADDITIONAL_KEYS
+from .exceptions import ExitHandlerException
 
 logger = logging.getLogger(__name__)
 
@@ -529,3 +530,14 @@ def get_ec2_pricing(ec2_type, market, config):
         price = float(price)
 
     return price
+
+
+def exit_callback(config, exit: bool = False):
+    if config['job'] == 'engine' and (config.get('spot_retries') or (config.get('on_demand_failover') or config.get('market_failover'))):
+        logger.error('Error occurred, bubbling up error to handler.')
+        raise ExitHandlerException
+
+    if exit:
+        sys.exit(1)
+
+    pass
