@@ -43,6 +43,7 @@ Each forge command certain parameters. A yaml file with all the parameters can b
       ```
     - If running via the command line, a range of values is passed as: ``--market on-demand spot``.
 - **name** - Name of the instance/cluster
+- **on_demand_failover** - If using engine mode and all spot attempts (market: spot + spot retries) have failed, run a final attempt using on-demand.
 - **ram** - Minimum amount of RAM required. Can be a range e.g. [16, 32]. 
     - If using a cluster, you must specify both the master and worker. Master first, worker second.
       ```yaml
@@ -76,5 +77,6 @@ Each forge command certain parameters. A yaml file with all the parameters can b
     - Use the `--all` flag to run the script on all the instances in a cluster.
     - E.g. `run_cmd: scripts/run.sh {env} {date} {ip}`
 - **service** - `cluster` or `single`
+- **spot_retries** - If using engine mode, sets the number of times to retry a spot instance. Only retries if either market is spot.
 - **user_data** - Custom script passed to instance. Will be run only once when the instance starts up.
 - **valid_time** - How many hours the fleet will stay up. After this time, all EC2s will be destroyed. The default is 8.
