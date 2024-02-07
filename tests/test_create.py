@@ -10,21 +10,25 @@ from botocore.exceptions import ClientError
 from forge import create
 
 
+@mock.patch('forge.create.get_instance_details')
 @mock.patch('forge.create.search_and_create')
-def test_create_single(mock_search_create):
+def test_create_single(mock_search_create, mock_get_instance_details):
     """Test entry-point for creation of single instance."""
-    config = {'service': 'single'}
+    config = {'service': 'single', 'aws_az': 'us-east-1a'}
+    mock_get_instance_details.return_value = {'single': {}}
     create.create(config)
-    mock_search_create.assert_called_once_with(config, 'single')
+    mock_search_create.assert_called_once_with(config, 'single', {})
 
 
+@mock.patch('forge.create.get_instance_details')
 @mock.patch('forge.create.search_and_create')
-def test_create_cluster_master_workers(mock_search_create):
+def test_create_cluster_master_workers(mock_search_create, mock_get_instance_details):
     """Test entry-point for creation of cluster with master and workers."""
-    config = {'service': 'cluster', 'ram': [512]}
+    config = {'service': 'cluster', 'aws_az': 'us-east-1a'}
+    mock_get_instance_details.return_value = {'cluster-master': {}, 'cluster-worker': {}}
     create.create(config)
     mock_search_create.assert_has_calls([
-        mock.call(config, 'cluster-master'), mock.call(config, 'cluster-worker')
+        mock.call(config, 'cluster-master', {}), mock.call(config, 'cluster-worker', {})
     ])
 
 

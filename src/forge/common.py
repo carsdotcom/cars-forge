@@ -14,6 +14,7 @@ import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from . import DEFAULT_ARG_VALS, ADDITIONAL_KEYS
+from .exceptions import ExitHandlerException
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +118,8 @@ def ec2_ip(n, config):
                     'instance_type': i.get('InstanceType'),
                     'state': i.get('State').get('Name'),
                     'launch_time': i.get('LaunchTime'),
-                    'fleet_id': check_fleet_id(n, config)
+                    'fleet_id': check_fleet_id(n, config),
+                    'az': i.get('Placement')['AvailabilityZone']
                 }
                 details.append(x)
         logger.debug('ec2_ip details is %s', details)
@@ -320,6 +322,14 @@ def normalize_config(config):
     if config.get('aws_az'):
         config['region'] = config['aws_az'][:-1]
 
+    if config.get('aws_subnet') and not config.get('aws_multi_az'):
+        config['aws_multi_az'] = {config.get('aws_az'): config.get('aws_subnet')}
+    elif config.get('aws_subnet') and config.get('aws_multi_az'):
+        logger.warning('Both aws_multi_az and aws_subnet exist, defaulting to aws_multi_az')
+
+    if config.get('aws_region'):
+        config['region'] = config['aws_region']
+
     if not config.get('ram') and not config.get('cpu') and config.get('ratio'):
         DEFAULT_ARG_VALS['default_ratio'] = config.pop('ratio')
 
@@ -492,8 +502,8 @@ def get_ec2_pricing(ec2_type, market, config):
     float
         Hourly price of given EC2 type in given market.
     """
-    region = config.get('region')
-    az = config.get('aws_az')
+    region = config['region']
+    az = config['aws_az']
 
     if market == 'spot':
         client = boto3.client('ec2')
@@ -529,3 +539,14 @@ def get_ec2_pricing(ec2_type, market, config):
         price = float(price)
 
     return price
+
+
+def exit_callback(config, exit: bool = False):
+    if config['job'] == 'engine' and (config.get('spot_retries') or (config.get('on_demand_failover') or config.get('market_failover'))):
+        logger.error('Error occurred, bubbling up error to handler.')
+        raise ExitHandlerException
+
+    if exit:
+        sys.exit(1)
+
+    pass

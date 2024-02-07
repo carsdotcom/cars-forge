@@ -60,6 +60,7 @@ def pricing(detail, config, market):
             if dif > max_dif:
                 max_dif = dif
             ec2_type = e['instance_type']
+            config['aws_az'] = e['az']
             total_cost = get_ec2_pricing(ec2_type, market, config)
 
     if total_cost > 0:

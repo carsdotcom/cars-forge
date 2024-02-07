@@ -124,6 +124,7 @@ def test_get_ec2_pricing_ondemand(mock_regions, mock_boto):
     """Test getting on-demand EC2 hourly pricing."""
     exp_price = 0.123
     region = 'us-east-1'
+    az = 'us-east-1a'
     long_region = 'US East (N. Virginia)'
     response = {'PriceList': [json.dumps(
         {"terms": {"OnDemand": {
@@ -136,7 +137,7 @@ def test_get_ec2_pricing_ondemand(mock_regions, mock_boto):
     mock_products.return_value = response
     mock_regions.return_value = {region: long_region}
 
-    config = {'region': region}
+    config = {'region': region, 'aws_az': az}
     ec2_type = 'r5.large'
     act_price = common.get_ec2_pricing(ec2_type, 'on-demand', config)
     assert act_price == exp_price
