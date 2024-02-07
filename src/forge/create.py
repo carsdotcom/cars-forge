@@ -565,6 +565,7 @@ def create_fleet(n, config, task, instance_details):
 
     gpu = config.get('gpu_flag', False)
     market = config.get('market', DEFAULT_ARG_VALS['market'])
+    strategy = config.get('spot_strategy')
 
     market = market[-1] if 'cluster-worker' in n else market[0]
 
@@ -582,7 +583,7 @@ def create_fleet(n, config, task, instance_details):
             'AllocationStrategy': 'lowest-price'
         },
         'SpotOptions': {
-            'AllocationStrategy': 'capacity-optimized',
+            'AllocationStrategy': strategy,
             'InstanceInterruptionBehavior': 'terminate',
             'MaintenanceStrategies': {
                 'CapacityRebalance': {

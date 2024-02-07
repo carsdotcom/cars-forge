@@ -5,7 +5,7 @@ import os
 import sys
 
 import yaml
-from schema import Schema, And, Optional, SchemaError, Use
+from schema import Schema, And, Optional, Or, SchemaError, Use
 
 from .common import set_config_dir
 
@@ -65,6 +65,14 @@ def check_env_yaml(env_yaml):
         Optional('excluded_ec2s'): And(list),
         Optional('additional_config'): And(list),
         Optional('ec2_max'): And(int),
+        Optional('spot_strategy'): And(str, len,
+                                       Or(
+                                           'lowest-price',
+                                           'diversified',
+                                           'capacity-optimized',
+                                           'capacity-optimized-prioritized',
+                                           'price-capacity-optimized'),
+                                       error='Invalid spot allocation strategy'),
         Optional('on_demand_failover'): And(bool),
         Optional('spot_retries'): And(Use(int), lambda x: x > 0),
     })

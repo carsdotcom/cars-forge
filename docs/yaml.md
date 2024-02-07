@@ -77,6 +77,7 @@ Each forge command certain parameters. A yaml file with all the parameters can b
     - Use the `--all` flag to run the script on all the instances in a cluster.
     - E.g. `run_cmd: scripts/run.sh {env} {date} {ip}`
 - **service** - `cluster` or `single`
+- **spot_strategy** - Select the [spot allocation strategy](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2/client/create_fleet.html).
 - **spot_retries** - If using engine mode, sets the number of times to retry a spot instance. Only retries if either market is spot.
 - **user_data** - Custom script passed to instance. Will be run only once when the instance starts up.
 - **valid_time** - How many hours the fleet will stay up. After this time, all EC2s will be destroyed. The default is 8.
