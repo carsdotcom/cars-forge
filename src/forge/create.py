@@ -740,6 +740,11 @@ def create(config):
     """
     sys.excepthook = destroy_hook
 
+    profile = config.get('aws_profile')
+    region = config.get('region')
+
+    set_boto_session(region, profile)
+
     service = config.get('service')
     task_list = ['single']
 
