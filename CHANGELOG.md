@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.1] - 2024-02-08
+
+### Changed
+- **Create** - Set default boto3 session at beginning of create to resolve region bug
+
 ## [1.1.0] - 2024-02-07
 
 ### Added
