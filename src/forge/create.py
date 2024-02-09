@@ -703,11 +703,12 @@ def get_instance_details(config, task_list):
         return x[i] if x and x[i:i + 1] else None
 
     for task in task_list:
+        task_worker_count = worker_count
         if 'cluster-master' in task or 'single' in task:
             task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 0), cpu=_check(cpu, 0), ratio=_check(ratio, 0))
-            worker_count = 1
+            task_worker_count = 1
         elif 'cluster-worker' in task:
-            task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 1), cpu=_check(cpu, 1), ratio=_check(ratio, 1), workers=worker_count)
+            task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 1), cpu=_check(cpu, 1), ratio=_check(ratio, 1), workers=task_worker_count)
         else:
             logger.error("'%s' does not seem to be a valid cluster or single job.", task)
             if destroy_flag:
@@ -717,8 +718,8 @@ def get_instance_details(config, task_list):
         logger.debug('%s OVERRIDE DETAILS | RAM: %s out of %s | CPU: %s with ratio of %s', task, ram, total_ram, cpu, ram2cpu_ratio)
 
         instance_details[task] = {
-            'total_capacity': worker_count or total_ram,
-            'capacity_unit': 'units' if worker_count else 'memory-mib',
+            'total_capacity': task_worker_count or total_ram,
+            'capacity_unit': 'units' if task_worker_count else 'memory-mib',
             'override_instance_stats': {
                 'MemoryMiB': {'Min': task_ram[0], 'Max': task_ram[1]},
                 'VCpuCount': {'Min': task_cpu[0], 'Max': task_cpu[1]},
