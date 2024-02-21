@@ -664,6 +664,12 @@ def search_and_create(config, task, instance_details):
         e = detail[0]
         if e['state'] in ['running', 'stopped', 'stopping', 'pending']:
             logger.info('%s is %s, the IP is %s', task, e['state'], e['ip'])
+
+            if config.get('destroy_on_create'):
+                logger.info('destroy_on_create true, destroying fleet.')
+                destroy(config)
+                create_template(n, config, task)
+                create_fleet(n, config, task, instance_details)
         else:
             if len(e['fleet_id']) != 0:
                 logger.info('Fleet is running without EC2, will recreate it.')

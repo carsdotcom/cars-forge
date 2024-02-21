@@ -135,6 +135,7 @@ def check_user_yaml(user_yaml, additional_config: list = None):
         Optional('cpu'): And(list, error='Invalid CPU cores'),
         Optional('destroy_after_success'): And(bool),
         Optional('destroy_after_failure'): And(bool),
+        Optional('destroy_on_create'): And(bool),
         Optional('disk'): And(Use(int), positive_int),
         Optional('disk_device_name'): And(str, len, error='Invalid Device Name'),
         Optional('forge_env'): And(str, len, error='Invalid Environment'),
