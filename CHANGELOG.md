@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.2.0] - 2024-02-26
+- **Create** - Added `destroy_on_create`
+- **Common** - Moved all `n_list` functions to `get_nlist()`
+- **Dependencies** - Updated dependencies and tested on latest versions
+
 ## [1.1.1] - 2024-02-08
 
 ### Changed

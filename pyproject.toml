@@ -12,6 +12,7 @@ authors = [
     {name = "Gabriele Ron", email = "gron@cars.com"},
     {name = "Joao Moreira", email = "jmoreira@cars.com"}
 ]
+
 maintainers = [
     {name = "Nikhil Patel", email = "npatel@cars.com"},
     {name = "Gabriele Ron", email = "gron@cars.com"},
@@ -54,8 +55,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "pytest~=7.1.0",
-    "pytest-cov~=4.0"
+    "pytest",
+    "pytest-cov"
 ]
 
 dev = [
