@@ -167,8 +167,8 @@ def create_status(n, request, config):
     create_time = fleet_details.get('CreateTime')
     time_without_spot = 0
     while current_status != 'fulfilled':
-        if t > DEFAULT_ARG_VALS['create_timeout']:
-            logger.error('Timeout of %s seconds hit for instance fulfillment; Aborting.', DEFAULT_ARG_VALS['create_timeout'])
+        if config.get('create_timeout') and t > config['create_timeout']:
+            logger.error('Timeout of %s seconds hit for instance fulfillment; Aborting.', config['create_timeout'])
             if destroy_flag:
                 destroy(config)
             exit_callback(config, exit=True)
