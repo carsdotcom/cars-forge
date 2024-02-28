@@ -12,8 +12,7 @@ DEFAULT_ARG_VALS = {
     'default_ratio': [8, 8],
     'valid_time': 8,
     'ec2_max': 768,
-    'spot_strategy': 'price-capacity-optimized',
-    'create_timeout': 600
+    'spot_strategy': 'price-capacity-optimized'
 }
 
 # Required arguments for each Forge job
