@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.2.0] - 2024-02-26
 - **Create** - Added `destroy_on_create`
+- **Create** - Added `create_timeout` option
 - **Common** - Moved all `n_list` functions to `get_nlist()`
 - **Dependencies** - Updated dependencies and tested on latest versions
 
