@@ -6,20 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-## [1.2.0] - 2024-02-26
+## [1.1.0] - 2024-02-26
+### Added
 - **Create** - Added `destroy_on_create`
 - **Create** - Added `create_timeout` option
 - **Common** - Moved all `n_list` functions to `get_nlist()`
 - **Dependencies** - Updated dependencies and tested on latest versions
-
-## [1.1.1] - 2024-02-08
-
-### Changed
 - **Create** - Set default boto3 session at beginning of create to resolve region bug
-
-## [1.1.0] - 2024-02-07
-
-### Added
 - **Create**
   - Multi-AZ functionality
   - Spot retries
