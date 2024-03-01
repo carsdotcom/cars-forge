@@ -167,6 +167,12 @@ def create_status(n, request, config):
     create_time = fleet_details.get('CreateTime')
     time_without_spot = 0
     while current_status != 'fulfilled':
+        if config.get('create_timeout') and t > config['create_timeout']:
+            logger.error('Timeout of %s seconds hit for instance fulfillment; Aborting.', config['create_timeout'])
+            if destroy_flag:
+                destroy(config)
+            exit_callback(config, exit=True)
+
         if current_status == 'pending_fulfillment':
             time.sleep(10)
             t += 10
@@ -664,6 +670,12 @@ def search_and_create(config, task, instance_details):
         e = detail[0]
         if e['state'] in ['running', 'stopped', 'stopping', 'pending']:
             logger.info('%s is %s, the IP is %s', task, e['state'], e['ip'])
+
+            if config.get('destroy_on_create'):
+                logger.info('destroy_on_create true, destroying fleet.')
+                destroy(config)
+                create_template(n, config, task)
+                create_fleet(n, config, task, instance_details)
         else:
             if len(e['fleet_id']) != 0:
                 logger.info('Fleet is running without EC2, will recreate it.')
@@ -703,11 +715,12 @@ def get_instance_details(config, task_list):
         return x[i] if x and x[i:i + 1] else None
 
     for task in task_list:
+        task_worker_count = worker_count
         if 'cluster-master' in task or 'single' in task:
             task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 0), cpu=_check(cpu, 0), ratio=_check(ratio, 0))
-            worker_count = 1
+            task_worker_count = 1
         elif 'cluster-worker' in task:
-            task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 1), cpu=_check(cpu, 1), ratio=_check(ratio, 1), workers=worker_count)
+            task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 1), cpu=_check(cpu, 1), ratio=_check(ratio, 1), workers=task_worker_count)
         else:
             logger.error("'%s' does not seem to be a valid cluster or single job.", task)
             if destroy_flag:
@@ -717,8 +730,8 @@ def get_instance_details(config, task_list):
         logger.debug('%s OVERRIDE DETAILS | RAM: %s out of %s | CPU: %s with ratio of %s', task, ram, total_ram, cpu, ram2cpu_ratio)
 
         instance_details[task] = {
-            'total_capacity': worker_count or total_ram,
-            'capacity_unit': 'units' if worker_count else 'memory-mib',
+            'total_capacity': task_worker_count or total_ram,
+            'capacity_unit': 'units' if task_worker_count else 'memory-mib',
             'override_instance_stats': {
                 'MemoryMiB': {'Min': task_ram[0], 'Max': task_ram[1]},
                 'VCpuCount': {'Min': task_cpu[0], 'Max': task_cpu[1]},

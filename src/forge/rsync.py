@@ -6,7 +6,7 @@ import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
-from .common import ec2_ip, key_file, get_ip, exit_callback
+from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +40,6 @@ def rsync(config):
     config : dict
         Forge configuration data
     """
-    name = config.get('name')
-    date = config.get('date', '')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
-    service = config.get('service')
-    rr_all = config.get('rr_all')
 
     def _rsync(config, ip):
         """performs the rsync to a given ip
@@ -84,13 +79,7 @@ def rsync(config):
             else:
                 logger.info('Rsync successful:\n%s', output)
 
-    n_list = []
-    if service == "cluster":
-        n_list.append(f'{name}-{market[0]}-{service}-master-{date}')
-        if rr_all:
-            n_list.append(f'{name}-{market[-1]}-{service}-worker-{date}')
-    elif service == "single":
-        n_list.append(f'{name}-{market[0]}-{service}-{date}')
+    n_list = get_nlist(config)
 
     for n in n_list:
         try:

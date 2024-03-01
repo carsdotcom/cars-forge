@@ -6,7 +6,7 @@ import boto3
 
 from . import REQUIRED_ARGS
 from .parser import add_basic_args, add_general_args, add_env_args
-from .common import ec2_ip, get_ip, set_boto_session
+from .common import ec2_ip, get_ip, set_boto_session, get_nlist
 
 logger = logging.getLogger(__name__)
 
@@ -75,25 +75,11 @@ def start(config):
     config : dict
         Forge configuration data
     """
-    name = config['name']
-    date = config.get('date', '')
-    service = config['service']
     market = config.get('market')
 
-    n_list = []
-    if service == "cluster":
-        if market[0] == 'spot':
-            logger.error('Master is a spot instance; you cannot start a spot instance')
-        elif market[0] == 'on-demand':
-            n_list.append(f'{name}-{market[0]}-{service}-master-{date}')
+    if 'spot' in market:
+        logger.error('Master or worker is a spot instance; you cannot start a spot instance')
+        # sys.exit(1)  # ToDo: Should we change the tests to reflect an exit or allow it to continue?
 
-        if market[-1] == 'spot':
-            logger.error('Worker is a spot fleet; you cannot start a spot fleet')
-        elif market[-1] == 'on-demand':
-            n_list.append(f'{name}-{market[0]}-{service}-worker-{date}')
-    elif service == "single":
-        if market[0] == 'spot':
-            logger.error('The instance is a spot instance; you cannot start a spot instance')
-        elif market[0] == 'on-demand':
-            n_list.append(f'{name}-{market[0]}-{service}-{date}')
+    n_list = get_nlist({**config, 'rr_all': True})
     start_fleet(n_list, config)

@@ -75,6 +75,7 @@ def check_env_yaml(env_yaml):
                                        error='Invalid spot allocation strategy'),
         Optional('on_demand_failover'): And(bool),
         Optional('spot_retries'): And(Use(int), lambda x: x > 0),
+        Optional('create_timeout'): And(Use(int), lambda x: x > 0),
     })
     try:
         validated = schema.validate(env_yaml)

@@ -55,14 +55,8 @@ def test_start_error_in_spot_instance(mock_start_fleet, caplog, service, markets
         "service": service,
     }
     error_msg = ""
-    if service == "cluster":
-        if markets[0] == "spot":
-            error_msg = "Master is a spot instance; you cannot start a spot instance"
-        elif markets[1] == "spot":
-            error_msg = "Worker is a spot fleet; you cannot start a spot fleet"
-    else:
-        if markets[0] == "spot":
-            error_msg = "The instance is a spot instance; you cannot start a spot instance"
+    if 'spot' in markets:
+        error_msg = 'Master or worker is a spot instance; you cannot start a spot instance'
 
     with caplog.at_level(logging.ERROR):
         start.start(config)
