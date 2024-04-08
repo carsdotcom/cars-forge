@@ -144,6 +144,35 @@ def get_ip(details, states):
     return [(i['ip'], i['id']) for i in list(filter(lambda x: x['state'] in states, details))]
 
 
+def get_nlist(config):
+    """get list of instance names based on service
+
+    Parameters
+    ----------
+    config : dict
+        Forge configuration data
+
+    Returns
+    -------
+    list
+        List of instance names
+    """
+    date = config.get('date', '')
+    market = config.get('market', DEFAULT_ARG_VALS['market'])
+    name = config['name']
+    service = config['service']
+
+    n_list = []
+    if service == "cluster":
+        n_list.append(f'{name}-{market[0]}-{service}-master-{date}')
+        if config.get('rr_all'):
+            n_list.append(f'{name}-{market[-1]}-{service}-worker-{date}')
+    elif service == "single":
+        n_list.append(f'{name}-{market[0]}-{service}-{date}')
+
+    return n_list
+
+
 @contextlib.contextmanager
 def key_file(secret_id, region, profile):
     """Safely retrieve a secret file from AWS for temporary use.

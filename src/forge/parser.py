@@ -127,6 +127,7 @@ def add_job_args(parser):
     common_grp.add_argument('--valid_time', '--valid-time', type=positive_int_arg)
     common_grp.add_argument('--user_data', '--user-data', nargs='*')
     common_grp.add_argument('--gpu', action='store_true', dest='gpu_flag')
+    common_grp.add_argument('--destroy_on_create', '--destroy-on-create', action='store_true', default=None)
 
 
 def add_action_args(parser):

@@ -135,6 +135,7 @@ def check_user_yaml(user_yaml, additional_config: list = None):
         Optional('cpu'): And(list, error='Invalid CPU cores'),
         Optional('destroy_after_success'): And(bool),
         Optional('destroy_after_failure'): And(bool),
+        Optional('destroy_on_create'): And(bool),
         Optional('disk'): And(Use(int), positive_int),
         Optional('disk_device_name'): And(str, len, error='Invalid Device Name'),
         Optional('forge_env'): And(str, len, error='Invalid Environment'),
@@ -191,7 +192,7 @@ def load_config(args):
 
     logger.info('Checking config file: %s', args['yaml'])
     logger.debug('Required User config is %s', user_config)
-    env = args['forge_env'] or user_config.get('forge_env')
+    env = args.get('forge_env') or user_config.get('forge_env')
 
     if env is None:
         logger.error("'forge_env' variable required.")
@@ -218,12 +219,11 @@ def load_config(args):
     env_config.update(normalize_config(env_config))
     check_keys(env_config['region'], env_config.get('aws_profile'))
 
-    additional_config_data = env_config.pop('additional_config', None)
+    additional_config_data = env_config.pop('additional_config', [])
     additional_config = []
-    if additional_config_data:
-        for i in additional_config_data:
-            ADDITIONAL_KEYS.append(i['name'])
-            additional_config.append(i)
+    for i in additional_config_data:
+        ADDITIONAL_KEYS.append(i['name'])
+        additional_config.append(i)
 
     logger.debug('Additional config options: %s', additional_config)
 
