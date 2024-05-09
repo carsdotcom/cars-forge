@@ -164,6 +164,11 @@ def test_check_user_yaml_invalid(mock_exit, bad_config, error_msg, caplog):
       'date': '2021-01-01', 'forge_env': 'dev'},
      {'forge_env': 'dev', 'service': 'single', 'ram': [[64]], 'aws_role': 'forge-test_role-dev',
       'run_cmd': 'dummy.sh dev test', 'gpu_flag': True}),
+    # Job with runtime override of gpu instance
+    ({'yaml': os.path.join(TEST_DIR, 'data', 'single_basic_gpu.yaml'),
+      'date': '2021-01-01', 'forge_env': 'dev', 'gpu_flag': False},
+     {'forge_env': 'dev', 'service': 'single', 'ram': [[64]], 'aws_role': 'forge-test_role-dev',
+      'run_cmd': 'dummy.sh dev test', 'gpu_flag': False}),
     # Job with no runtime overrides and on-demand instance
     ({'yaml': os.path.join(TEST_DIR, 'data', 'single_basic_ondemand.yaml'),
       'date': '2021-01-01', 'forge_env': 'dev'},
