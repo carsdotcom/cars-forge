@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **Create** - Fix GPU AMI not being selected.
+- **Parser** - Fix GPU flag not being passed properly to the config dict.
+
+
 ## [1.1.0] - 2024-02-26
+
 ### Added
 - **Create** - Added `destroy_on_create`
 - **Create** - Added `create_timeout` option
