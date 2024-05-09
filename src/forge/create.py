@@ -324,8 +324,10 @@ def create_template(n, config, task):
     market = market[-1] if task == 'cluster-worker' else market[0]
     if service:
         if len(user_ami) == 21 and user_ami[:4] == "ami-":
-            ami, disk, disk_device_name = (user_ami, config['disk'], config['disk_device_name'])
+            ami, disk, disk_device_name = (user_ami, user_disk, user_disk_device_name)
         else:
+            if gpu:
+                user_ami += '_gpu'
             ami_info = env_ami.get(user_ami)
             ami, disk, disk_device_name = (ami_info['ami'], ami_info['disk'], ami_info['disk_device_name'])
 
@@ -727,7 +729,7 @@ def get_instance_details(config, task_list):
                 destroy(config)
             sys.exit(1)
 
-        logger.debug('%s OVERRIDE DETAILS | RAM: %s out of %s | CPU: %s with ratio of %s', task, ram, total_ram, cpu, ram2cpu_ratio)
+        logger.debug('%s OVERRIDE DETAILS | RAM: %s out of %s | CPU: %s with ratio of %s', task, task_ram, total_ram, task_cpu, ram2cpu_ratio)
 
         instance_details[task] = {
             'total_capacity': task_worker_count or total_ram,
