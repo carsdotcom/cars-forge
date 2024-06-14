@@ -707,8 +707,22 @@ def get_instance_details(config, task_list):
     ram = config.get('ram', None)
     cpu = config.get('cpu', None)
     ratio = config.get('ratio', None)
+    service = config.get('service', None)
     worker_count = config.get('workers', None)
     destroy_flag = config.get('destroy_after_failure')
+
+    rc_length = 1 if service == 'single' else 2 if service == 'cluster' else None
+
+    if not ram and not cpu:
+        logger.error('Invalid configuration, either ram or cpu must be provided.')
+        if destroy_flag:
+            destroy(config)
+        sys.exit(1)
+    elif (ram and len(ram) != rc_length) or (cpu and len(cpu) != rc_length):
+        logger.error('Invalid configuration, ram or cpu must have one value for single jobs, and two for cluster jobs.')
+        if destroy_flag:
+            destroy(config)
+        sys.exit(1)
 
     instance_details = {}
 

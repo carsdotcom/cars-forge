@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 - **Create** - Fix GPU AMI not being selected.
 - **Parser** - Fix GPU flag not being passed properly to the config dict.
-
+- **Create** - Better error reporting regarding RAM and CPU misconfigurations.
 
 ## [1.1.0] - 2024-02-26
 
