@@ -341,15 +341,19 @@ def create_template(n, config, task):
     fmt = FormatEmpty()
     client = boto3.client('ec2')
     if isinstance(ud, dict):
-        if service in config['user_data']:
-            if isinstance(ud[service], str):
-                with open(os.path.join(config_dir, ud[service]), 'r') as f:
+        # ToDo: Deprecate service being checked in event of AMI ID
+        ami_or_service = config['user_data'].get(user_ami, None) or config['user_data'].get(service, None)
+
+        if ami_or_service:
+            if isinstance(ud[ami_or_service], str):
+                with open(os.path.join(config_dir, ud[user_ami]), 'r') as f:
                     ud = fmt.format(f.read(), **user_accessible_vars(config, market=market, task=task))
             else:
-                for k, v in ud[service].items():
+                for k, v in ud[ami_or_service].items():
                     if k in n:
                         with open(os.path.join(config_dir, v), 'r') as f:
                             ud = fmt.format(f.read(), **user_accessible_vars(config, market=market, task=task))
+
         u = base64.b64encode(ud.encode("ascii")).decode("ascii")
     elif isinstance(ud, list):
         with open(os.path.realpath(ud[0 if task != 'cluster-worker' else 1])) as f:
