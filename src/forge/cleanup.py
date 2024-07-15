@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import boto3
 
 from . import REQUIRED_ARGS
-from .common import set_boto_session
+from .configuration import Configuration
 from .parser import add_basic_args, add_general_args, add_env_args, add_job_args, add_action_args
 
 logger = logging.getLogger(__name__)
@@ -29,12 +29,12 @@ def cli_cleanup(subparsers):
     REQUIRED_ARGS['cleanup'] = {'forge_env'}
 
 
-def cleanup(config):
+def cleanup(config: Configuration):
     """removes all AWS LaunchTemplates that have an expired valid_time tag
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
     Forge configuration data
 
     Returns
@@ -42,11 +42,6 @@ def cleanup(config):
     int
         returns 0 for success
     """
-    profile = config.get('aws_profile')
-    region = config.get('region')
-
-    set_boto_session(region, profile)
-
     client = boto3.client('ec2')
 
     describe_args = {'Filters': [{'Name': 'tag-key', 'Values': ['valid_until']}]}

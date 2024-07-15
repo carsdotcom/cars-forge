@@ -1,5 +1,6 @@
 __version__ = "1.2.0"
 
+# ToDo: Remove
 # Default values for forge's essential arguments
 DEFAULT_ARG_VALS = {
     'market': ['spot', 'spot'],

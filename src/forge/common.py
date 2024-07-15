@@ -14,19 +14,20 @@ import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from . import DEFAULT_ARG_VALS, ADDITIONAL_KEYS
+from .configuration import Configuration
 from .exceptions import ExitHandlerException
 
 logger = logging.getLogger(__name__)
 
 
-def check_fleet_id(n, config):
+def check_fleet_id(n, config: Configuration):
     """get the AWS fleet id for n
 
     Parameters
     ----------
     n : str
         Fleet name to get ID of
-    config : dict
+    config : Configuration
         Forge configuration data
 
     Returns
@@ -34,11 +35,6 @@ def check_fleet_id(n, config):
     list
         A list of fleet IDs for n
     """
-    profile = config.get('aws_profile')
-    region = config.get('region')
-
-    set_boto_session(region, profile)
-
     client = boto3.client('ec2')
     response = client.describe_tags(
         Filters=[
@@ -61,14 +57,14 @@ def check_fleet_id(n, config):
     return f_id
 
 
-def ec2_ip(n, config):
+def ec2_ip(n, config: Configuration):
     """get AWS EC2 instance details for n
 
     Parameters
     ----------
     n : str
         Fleet name to get the instance details of
-    config : dict
+    config : Configuration
         Forge configuration data
 
     Returns
@@ -76,11 +72,6 @@ def ec2_ip(n, config):
     list
         A list of dictionaries of the instance details in n
     """
-    profile = config.get('aws_profile')
-    region = config.get('region')
-
-    set_boto_session(region, profile)
-
     ec2 = boto3.resource('ec2')
     client = boto3.client('ec2')
 
@@ -144,12 +135,12 @@ def get_ip(details, states):
     return [(i['ip'], i['id']) for i in list(filter(lambda x: x['state'] in states, details))]
 
 
-def get_nlist(config):
+def get_nlist(config: Configuration):
     """get list of instance names based on service
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
 
     Returns
@@ -157,15 +148,15 @@ def get_nlist(config):
     list
         List of instance names
     """
-    date = config.get('date', '')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
-    name = config['name']
-    service = config['service']
+    date = config.date or ''
+    market = config.market or DEFAULT_ARG_VALS['market']
+    name = config.name
+    service = config.service
 
     n_list = []
     if service == "cluster":
         n_list.append(f'{name}-{market[0]}-{service}-master-{date}')
-        if config.get('rr_all'):
+        if config.rr_all:
             n_list.append(f'{name}-{market[-1]}-{service}-worker-{date}')
     elif service == "single":
         n_list.append(f'{name}-{market[0]}-{service}-{date}')
@@ -299,123 +290,6 @@ def set_config_dir(args, forge_env=''):
     return config_dir
 
 
-def _parse_list(option):
-    """Parse a list option.
-
-    Parameters
-    ----------
-    option : str or list
-        Option value to be parsed. Can be an actual list of lists or a list of
-        comma-joined list values.
-
-    Returns
-    -------
-    list of list
-        Parsed option as a list of lists.
-    """
-    if option is None:
-        return option
-    option = [
-        list(map(int, opt.split(','))) if isinstance(opt, str) else opt for opt in option
-    ]
-    option = [opt if isinstance(opt, list) else [opt] for opt in option]
-    return option
-
-
-def normalize_config(config):
-    """normalizes the Forge configuration data
-
-    If it detects an environmental config data (determined by a lack of ram or cpu data), it processes the ratio and
-    updates DEFAULT_ARG_VALS['ratio']. If it detects a user configuration option, it will parse the ram, cpu, ration,
-    and market data so that it conforms to Forge's expectation. In either scenario, if it detects aws_az it will update
-    region as well.
-
-    Parameters
-    ----------
-    config : dict
-        Forge configuration data
-
-    Notes
-    -----
-    If ram or cpu are in config, it is considered a user config as they otherwise shouldn't exist. Otherwise, it will be
-    considered an environment config. Thus, the default ratio will only be set if ratio is present in config and ram &
-    cpu are not. Likewise, ram, cpu, ratio, and market will only be normalized if ram or cpu are present.
-
-    Returns
-    -------
-    dict
-        The updated Forge configuration data
-    """
-    config = dict(config)
-
-    if config.get('aws_az'):
-        config['region'] = config['aws_az'][:-1]
-
-    if config.get('aws_subnet') and not config.get('aws_multi_az'):
-        config['aws_multi_az'] = {config.get('aws_az'): config.get('aws_subnet')}
-    elif config.get('aws_subnet') and config.get('aws_multi_az'):
-        logger.warning('Both aws_multi_az and aws_subnet exist, defaulting to aws_multi_az')
-
-    if config.get('aws_region'):
-        config['region'] = config['aws_region']
-
-    if not config.get('ram') and not config.get('cpu') and config.get('ratio'):
-        DEFAULT_ARG_VALS['default_ratio'] = config.pop('ratio')
-
-    if not config.get('ram') and not config.get('cpu') and config.get('ec2_max'):
-        DEFAULT_ARG_VALS['ec2_max'] = config.pop('ec2_max')
-
-    if 'ram' in config or 'cpu' in config:
-        config['ram'] = _parse_list(config.get('ram'))
-        config['cpu'] = _parse_list(config.get('cpu'))
-        config['ratio'] = _parse_list(config.get('ratio'))
-
-        market = config.get('market')
-        if market and isinstance(market, str):
-            config['market'] = list(map(str.strip, market.split(',')))
-
-    return config
-
-
-def parse_additional_config(config, additional_config):
-    """parse additional configuration data
-
-    Parameters
-    ----------
-    config : dict
-        Forge configuration data
-    additional_config : dict
-        Additional Forge use configuration options
-
-    Returns
-    -------
-    dict
-        The additional Forge configuration data
-    """
-    config = dict(config)
-
-    additional_config = {x['name']: x['default'] for x in additional_config if x['default']}
-    config = {**config, **additional_config}
-
-    return config
-
-
-def set_boto_session(region, profile=None):
-    """set the default Boto3 session
-
-    Parameters
-    ----------
-    region : str
-        AWS region
-    profile : str, optional
-        AWS CLI profile
-    """
-    if profile:
-        boto3.setup_default_session(profile_name=profile, region_name=region)
-    else:
-        boto3.setup_default_session(region_name=region)
-
-
 def check_keys(region, profile=None):
     """validates that AWS keys are valid
 
@@ -471,7 +345,7 @@ class FormatEmpty(string.Formatter):
             return ""
 
 
-def user_accessible_vars(config, **kwargs):
+def user_accessible_vars(config: Configuration, **kwargs):
     """Create a dictionary to hold user-accessible data.
 
     This data can be used in:
@@ -482,7 +356,7 @@ def user_accessible_vars(config, **kwargs):
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data.
     kwargs : str
         Extra variables to be exposed.
@@ -495,8 +369,8 @@ def user_accessible_vars(config, **kwargs):
     user_vars = {}
 
     # Expose the proper market(s)
-    job_markets = config.get('market', DEFAULT_ARG_VALS['market'])
-    if config['service'] == 'cluster':
+    job_markets = config.market or DEFAULT_ARG_VALS['market']
+    if config.service == 'cluster':
         user_vars['market_master'] = job_markets[0]
         user_vars['market_worker'] = job_markets[-1]
     else:
@@ -514,7 +388,7 @@ def user_accessible_vars(config, **kwargs):
     return user_vars
 
 
-def get_ec2_pricing(ec2_type, market, config):
+def get_ec2_pricing(ec2_type, market, config: Configuration):
     """Get the hourly spot or on-demand price of given EC2 instance type.
 
     Parameters
@@ -523,7 +397,7 @@ def get_ec2_pricing(ec2_type, market, config):
         EC2 type to get pricing for.
     market : str
         Whether EC2 is a `'spot'` or `'on-demand'` instance.
-    config : dict
+    config : Configuration
         Forge configuration data.
 
     Returns
@@ -531,8 +405,8 @@ def get_ec2_pricing(ec2_type, market, config):
     float
         Hourly price of given EC2 type in given market.
     """
-    region = config['region']
-    az = config['aws_az']
+    region = config.region
+    az = config.aws_az
 
     if market == 'spot':
         client = boto3.client('ec2')
@@ -570,8 +444,8 @@ def get_ec2_pricing(ec2_type, market, config):
     return price
 
 
-def exit_callback(config, exit: bool = False):
-    if config['job'] == 'engine' and (config.get('spot_retries') or (config.get('on_demand_failover') or config.get('market_failover'))):
+def exit_callback(config: Configuration, exit: bool = False):
+    if config.job == 'engine' and (config.spot_retries or (config.on_demand_failover or config.market_failover)):
         logger.error('Error occurred, bubbling up error to handler.')
         raise ExitHandlerException
 

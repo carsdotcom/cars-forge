@@ -7,6 +7,7 @@ import boto3
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .exceptions import ExitHandlerException
 from .parser import add_basic_args, add_job_args, add_env_args, add_general_args, add_action_args, nonnegative_int_arg
+from .configuration import Configuration
 from .create import create, ec2_ip
 from .rsync import rsync
 from .run import run
@@ -39,12 +40,12 @@ def cli_engine(subparsers):
                                        REQUIRED_ARGS['destroy']))
 
 
-def engine(config):
+def engine(config: Configuration):
     """runs the Forge engine command
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
 
     Returns
@@ -62,12 +63,12 @@ def engine(config):
         status = run(config)
     except ExitHandlerException:
         # Check for spot instances and retries
-        if 'spot' in config['market']:
+        if 'spot' in config.market:
 
-            name = config.get('name')
-            date = config.get('date', '')
-            market = config.get('market', DEFAULT_ARG_VALS['market'])
-            service = config.get('service')
+            name = config.name
+            date = config.date or ''
+            market = config.market or DEFAULT_ARG_VALS['market']
+            service = config.service
 
             n_list = []
             if service == "cluster":
@@ -91,11 +92,11 @@ def engine(config):
                 status = 3
                 return status
 
-            if config.get('spot_retries', 0) > 0:
-                config['spot_retries'] -= 1
+            if (config.spot_retries or 0) > 0:
+                config.spot_retries -= 1
                 status = engine(config)
-            elif config.get('on_demand_failover') or config.get('market_failover'):
-                config['market'][0] = config['market'][-1] = 'on-demand'
+            elif config.on_demand_failover or config.market_failover:
+                config.market[0] = config.market[-1] = 'on-demand'
                 status = engine(config)
         else:
             status = 5
