@@ -54,7 +54,7 @@ def engine(config):
 
     try:
         create(config)
-        rsync(config)
+        status = rsync(config)
         status = run(config)
     except ExitHandlerException:
         # Check for spot instances and retries

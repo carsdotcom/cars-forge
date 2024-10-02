@@ -83,7 +83,7 @@ def execute(config):
     elif job == 'destroy':
         destroy(config)
     elif job == 'rsync':
-        rsync(config)
+        status = rsync(config)
     elif job == 'run':
         status = run(config)
     elif job == 'engine':
