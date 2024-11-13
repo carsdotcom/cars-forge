@@ -123,7 +123,7 @@ def run(config):
             logger.error('Run command raised error: %s', e)
             try:
                 exit_callback(config)
-            except ExitHandlerException as exc:
+            except ExitHandlerException:
                 raise
             finally:
                 if destroy_flag:
