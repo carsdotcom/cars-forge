@@ -1,6 +1,8 @@
 """Run a command on remote EC2, rsync user content, and execute it."""
-import boto3
 import logging
+import time
+
+import boto3
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .exceptions import ExitHandlerException
@@ -54,6 +56,7 @@ def engine(config):
 
     try:
         create(config)
+        time.sleep(60)
         status = rsync(config)
         status = run(config)
     except ExitHandlerException:
