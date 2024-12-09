@@ -56,6 +56,7 @@ def engine(config):
 
     try:
         create(config)
+        logger.info('Waiting for 60s to ensure EC2 has finished starting up...')
         time.sleep(60)
         status = rsync(config)
         status = run(config)
