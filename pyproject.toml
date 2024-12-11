@@ -5,7 +5,7 @@
 name = "cars-forge"
 description = "Create an on-demand/spot fleet of single or cluster EC2 instances."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 license = "Apache-2.0"
 authors = [
     {name = "Nikhil Patel", email = "npatel@cars.com"},
@@ -38,8 +38,6 @@ classifiers = [
     "Operating System :: Unix",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

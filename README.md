@@ -5,6 +5,7 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/cars-forge?color=navy&style=flat-square)
 ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/carsdotcom/cars-forge/Publish%20Package/main?color=navy&style=flat-square)
 ![GitHub contributors](https://img.shields.io/github/contributors/carsdotcom/cars-forge?color=navy&style=flat-square)
+
 ---
 
 ## About

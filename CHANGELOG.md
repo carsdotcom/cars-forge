@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [1.1.1] - 2024-10-02
 
 ### Changed
+- **Python Version** - Bump minimum python version to 3.9.
 - **Rsync** - Properly triggers retry sequence
 - **Rsync** - Gives a return code now
 

@@ -13,7 +13,8 @@ from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_job_args, add_env_args, add_general_args
-from .common import ec2_ip, destroy_hook, set_boto_session, user_accessible_vars, FormatEmpty, get_ec2_pricing, exit_callback
+from .common import (ec2_ip, destroy_hook, set_boto_session, exit_callback,
+                     user_accessible_vars, FormatEmpty, get_ec2_pricing)
 from .destroy import destroy
 
 logger = logging.getLogger(__name__)
