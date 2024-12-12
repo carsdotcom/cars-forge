@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Parser** - Fix GPU flag not being passed properly to the config dict.
 - **Create** - Better error reporting regarding RAM and CPU misconfigurations.
 
+
 ## [1.1.0] - 2024-02-26
 
 ### Added
@@ -32,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - **Create** - Configurable spot strategy
 - **Documentation** - Updated with new changes
+
 
 ## [1.0.2] - 2022-10-27
 
@@ -58,6 +60,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **GitHub** - Add step to create GitHub release after uploading to PYPI.
 - **GitHub** - Update action to build and publish package only when version is bumped.
 - **Forge** - Added automatic tag `forge-name` to allow `Name` tag to be changed.
+
 
 ## [1.0.0] - 2022-09-27
 
