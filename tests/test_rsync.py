@@ -167,6 +167,7 @@ def test_rsync_fail(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk,
         'region': 'us-east-1',
         'aws_profile': 'dev',
         'rsync_path': rsync_path,
+        'job': 'rsync',
     }
     expected_cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o'
     expected_cmd += f' StrictHostKeyChecking=no -i {key_path}" {rsync_path}/* root@{ip}:/root/'
@@ -175,7 +176,7 @@ def test_rsync_fail(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk,
         returncode=123, cmd=expected_cmd
     )
 
-    rsync.rsync(config)
+    assert rsync.rsync(config) == 123
 
     mock_ec2_ip.assert_called_once_with(
         f"{config['name']}-spot-single-{config['date']}", config

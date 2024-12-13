@@ -43,7 +43,7 @@ def load_admin_cfg():
       'home_dir': os.path.dirname(FORGE_DIR), 'yaml_dir': os.path.join(TEST_DIR, 'data'), 'user': 'test_user',
       'ami': 'single_ami', 'forge_version': False, 'config_dir': os.path.join(TEST_CFG_DIR, 'dev'),
       'region': 'us-east-1', 'destroy_after_success': True, 'destroy_after_failure': True, 'default_ratio': [8, 8],
-      'valid_time': 8, 'ec2_max': 768}),
+      'valid_time': 8, 'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
     # Destroy job; passing the relative path to a yaml
     (['forge', 'destroy', '--yaml', os.path.join(TEST_DIR_REL, 'data', 'single_intermediate.yaml')],
      {'name': 'test-single-intermediate', 'log_level': 'INFO',
@@ -53,7 +53,7 @@ def load_admin_cfg():
       'yaml_dir': os.path.join(TEST_DIR, 'data'), 'user': 'test_user', 'ami': 'single_ami',
       'forge_version': False, 'config_dir': os.path.join(TEST_CFG_DIR, 'dev'), 'region': 'us-east-1',
       'destroy_after_success': True, 'destroy_after_failure': True, 'default_ratio': [8, 8], 'valid_time': 8,
-      'ec2_max': 768}),
+      'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
     # Destroy job; overriding log_level
     (['forge', 'destroy', '--yaml', os.path.join(TEST_DIR, 'data', 'single_intermediate.yaml'), '--log_level', 'debug'],
      {'name': 'test-single-intermediate', 'log_level': 'DEBUG',
@@ -63,7 +63,7 @@ def load_admin_cfg():
       'home_dir': os.path.dirname(FORGE_DIR), 'yaml_dir': os.path.join(TEST_DIR, 'data'), 'user': 'test_user',
       'ami': 'single_ami', 'forge_version': False, 'config_dir': os.path.join(TEST_CFG_DIR, 'dev'),
       'region': 'us-east-1', 'destroy_after_success': True, 'destroy_after_failure': True, 'default_ratio': [8, 8],
-      'valid_time': 8, 'ec2_max': 768}),
+      'valid_time': 8, 'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
     # Destroy job; overriding market
     (['forge', 'destroy', '--yaml', os.path.join(TEST_DIR, 'data', 'single_intermediate.yaml'),
       '--market', 'on-demand'],
@@ -73,7 +73,8 @@ def load_admin_cfg():
       'gpu_flag': False, 'app_dir': TEST_DIR, 'src_dir': FORGE_DIR, 'home_dir': os.path.dirname(FORGE_DIR),
       'yaml_dir': os.path.join(TEST_DIR, 'data'), 'user': 'test_user', 'ami': 'single_ami', 'forge_version': False,
       'config_dir': os.path.join(TEST_CFG_DIR, 'dev'), 'region': 'us-east-1', 'destroy_after_success': True,
-      'destroy_after_failure': True, 'default_ratio': [8, 8], 'valid_time': 8, 'ec2_max': 768}),
+      'destroy_after_failure': True, 'default_ratio': [8, 8], 'valid_time': 8, 'ec2_max': 768,
+      'spot_strategy': 'price-capacity-optimized'}),
     # Destroy job; no market
     (['forge', 'destroy', '--yaml', os.path.join(TEST_DIR, 'data', 'single_basic.yaml'), '--forge_env', 'dev'],
      {'name': 'test-single-basic', 'log_level': 'INFO', 'yaml': os.path.join(TEST_DIR, 'data', 'single_basic.yaml'),
@@ -82,7 +83,7 @@ def load_admin_cfg():
       'home_dir': os.path.dirname(FORGE_DIR), 'yaml_dir': os.path.join(TEST_DIR, 'data'), 'user': 'test_user',
       'ami': 'single_ami', 'forge_version': False, 'config_dir': os.path.join(TEST_CFG_DIR, 'dev'),
       'region': 'us-east-1', 'destroy_after_success': True, 'destroy_after_failure': True, 'default_ratio': [8, 8],
-      'valid_time': 8, 'ec2_max': 768}),
+      'valid_time': 8, 'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
     # Configure job
     (['forge', 'configure'],
      {'forge_version': False, 'job': 'configure', 'log_level': 'INFO'}),
@@ -95,7 +96,7 @@ def load_admin_cfg():
       'home_dir': os.path.dirname(FORGE_DIR), 'yaml_dir': os.path.join(TEST_DIR, 'data'), 'user': 'test_user',
       'ami': 'single_ami', 'forge_version': False, 'config_dir': os.path.join(TEST_CFG_DIR, 'dev'),
       'region': 'us-east-1', 'destroy_after_success': True, 'destroy_after_failure': True, 'default_ratio': [8, 8],
-      'valid_time': 8, 'ec2_max': 768}),
+      'valid_time': 8, 'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
     # Create job; setting gpu
     (['forge', 'create', '--yaml', os.path.join(TEST_DIR, 'data', 'single_basic.yaml'), '--forge_env', 'dev', '--gpu'],
      {'name': 'test-single-basic', 'log_level': 'INFO', 'yaml': os.path.join(TEST_DIR, 'data', 'single_basic.yaml'),
@@ -104,7 +105,7 @@ def load_admin_cfg():
       'home_dir': os.path.dirname(FORGE_DIR), 'yaml_dir': os.path.join(TEST_DIR, 'data'), 'user': 'test_user',
       'ami': 'single_ami', 'forge_version': False, 'config_dir': os.path.join(TEST_CFG_DIR, 'dev'),
       'region': 'us-east-1', 'destroy_after_success': True, 'destroy_after_failure': True, 'default_ratio': [8, 8],
-      'valid_time': 8, 'ec2_max': 768}),
+      'valid_time': 8, 'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
 ])
 def test_forge_main(mock_pass, mock_execute, mock_keys, mock_config_dir, cli_call, exp_config, load_admin_cfg):
     """Test the config after calling forge via the command line."""

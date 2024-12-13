@@ -5,7 +5,7 @@ import os
 import sys
 
 import yaml
-from schema import Schema, And, Optional, SchemaError
+from schema import Schema, And, Optional, Or, SchemaError, Use
 
 from .common import set_config_dir
 
@@ -50,11 +50,13 @@ def check_env_yaml(env_yaml):
     """
     schema = Schema({
         'forge_env': And(str, len, error='Invalid Environment Name'),
-        'aws_az': And(str, len, error='Invalid AWS availability zone'),
+        Optional('aws_region'): And(str, len, error='Invalid AWS region'),
+        Optional('aws_az'): And(str, len, error='Invalid AWS availability zone'),
+        Optional('aws_subnet'): And(str, len, error='Invalid AWS Subnet'),
         'ec2_amis': And(dict, len, error='Invalid AMI Dictionary'),
-        'aws_subnet': And(str, len, error='Invalid AWS Subnet'),
+        Optional('aws_multi_az'): And(dict, len, error='Invalid AWS Subnet'),
         'ec2_key': And(str, len, error='Invalid AWS key'),
-        'aws_security_group': And(str, len, error='Invalid AWS Security Group'),
+        Optional('aws_security_group'): And(str, len, error='Invalid AWS Security Group'),
         'forge_pem_secret': And(str, len, error='Invalid Name of Secret'),
         Optional('aws_profile'): And(str, len, error='Invalid AWS profile'),
         Optional('ratio'): And(list, len, error='Invalid default ratio'),
@@ -62,7 +64,18 @@ def check_env_yaml(env_yaml):
         Optional('tags'): And(list, len, error="Invalid AWS tags"),
         Optional('excluded_ec2s'): And(list),
         Optional('additional_config'): And(list),
-        Optional('ec2_max'): And(int)
+        Optional('ec2_max'): And(int),
+        Optional('spot_strategy'): And(str, len,
+                                       Or(
+                                           'lowest-price',
+                                           'diversified',
+                                           'capacity-optimized',
+                                           'capacity-optimized-prioritized',
+                                           'price-capacity-optimized'),
+                                       error='Invalid spot allocation strategy'),
+        Optional('on_demand_failover'): And(bool),
+        Optional('spot_retries'): And(Use(int), lambda x: x > 0),
+        Optional('create_timeout'): And(Use(int), lambda x: x > 0),
     })
     try:
         validated = schema.validate(env_yaml)

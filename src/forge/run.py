@@ -5,8 +5,9 @@ import subprocess
 import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
+from .exceptions import ExitHandlerException
 from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
-from .common import ec2_ip, key_file, get_ip, destroy_hook, user_accessible_vars, FormatEmpty
+from .common import ec2_ip, key_file, get_ip, destroy_hook, user_accessible_vars, FormatEmpty, exit_callback, get_nlist
 from .destroy import destroy
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,6 @@ def run(config):
         pem_secret = config['forge_pem_secret']
         region = config['region']
         profile = config.get('aws_profile')
-        env = config['forge_env']
 
         with key_file(pem_secret, region, profile) as pem_path:
             fmt = FormatEmpty()
@@ -93,13 +93,7 @@ def run(config):
                 )
                 return exc.returncode
 
-    n_list = []
-    if service == "cluster":
-        n_list.append(f'{name}-{market[0]}-{service}-master-{date}')
-        if rr_all:
-            n_list.append(f'{name}-{market[-1]}-{service}-worker-{date}')
-    elif service == "single":
-        n_list.append(f'{name}-{market[0]}-{service}-{date}')
+    n_list = get_nlist(config)
 
     for n in n_list:
         try:
@@ -127,10 +121,13 @@ def run(config):
                     raise ValueError('Run command unsuccessful, ending attempts.')
         except ValueError as e:
             logger.error('Run command raised error: %s', e)
-            if destroy_flag:
-                logger.info('destroy_after_failure parameter True, running forge destroy...')
-                destroy(config)
-
-            break
+            try:
+                exit_callback(config)
+            except ExitHandlerException:
+                raise
+            finally:
+                if destroy_flag:
+                    logger.info('destroy_after_failure parameter True, running forge destroy...')
+                    destroy(config)
 
     return rval

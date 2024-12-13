@@ -5,8 +5,10 @@ import subprocess
 import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
+from .destroy import destroy
+from .exceptions import ExitHandlerException
 from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
-from .common import ec2_ip, key_file, get_ip
+from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +41,15 @@ def rsync(config):
     ----------
     config : dict
         Forge configuration data
+
+    Returns
+    -------
+    int
+        The status of the rsync commands
     """
-    name = config.get('name')
-    date = config.get('date', '')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
-    service = config.get('service')
-    rr_all = config.get('rr_all')
+
+    destroy_flag = config.get('destroy_after_failure')
+    rval = 0
 
     def _rsync(config, ip):
         """performs the rsync to a given ip
@@ -72,24 +77,19 @@ def rsync(config):
                 sys.exit(1)
 
             cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
-            cmd +=f' -i {pem_path}" {rsync_loc} root@{ip}:/root/'
+            cmd += f' -i {pem_path}" {rsync_loc} root@{ip}:/root/'
 
             try:
                 output = subprocess.check_output(
                     cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True
                 )
+                logger.info('Rsync successful:\n%s', output)
+                return 0
             except subprocess.CalledProcessError as exc:
                 logger.error('Rsync failed:\n%s', exc.output)
-            else:
-                logger.info('Rsync successful:\n%s', output)
+                return exc.returncode
 
-    n_list = []
-    if service == "cluster":
-        n_list.append(f'{name}-{market[0]}-{service}-master-{date}')
-        if rr_all:
-            n_list.append(f'{name}-{market[-1]}-{service}-worker-{date}')
-    elif service == "single":
-        n_list.append(f'{name}-{market[0]}-{service}-{date}')
+    n_list = get_nlist(config)
 
     for n in n_list:
         try:
@@ -103,6 +103,14 @@ def rsync(config):
 
             for ip, _ in targets:
                 logger.info('Rsync destination is %s', ip)
-                _rsync(config, ip)
-        except Exception as e:
+                rval = _rsync(config, ip)
+                if rval:
+                    raise ValueError('Rsync command unsuccessful, ending attempts.')
+        except ValueError as e:
             logger.error('Got error %s when trying to rsync.', e)
+            try:
+                exit_callback(config)
+            except ExitHandlerException:
+                raise
+
+    return rval

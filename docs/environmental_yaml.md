@@ -59,10 +59,18 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	    constraints: [2.3, 3.0, 3.1]
 	    error: "Invalid Spark version. Only 2.3, 3.0, and 3.1 are supported."
     ```
-- **aws_az** - The [AWS availability zone](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) where Forge will create the EC2 instance. Currently, Forge can run only in one AZ
-- **aws_profile** - [AWS CLI profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) to use
+- **aws_az** - The [AWS availability zone](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) where Forge will create the EC2 instance. If set, multi-az placement will be disabled.
+- **aws_region** - The AWS region for Forge to run in- **aws_profile** - [AWS CLI profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) to use
 - **aws_security_group** - [AWS Security Group](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-security-groups.html) for the instance
-- **aws_subnet** - [AWS subnet](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html) where the EC2s will run 
+- **aws_subnet** - [AWS subnet](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html) where the EC2s will run
+- **aws_multi_az** - [AWS subnet](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html) where the EC2s will run organized by AZ
+  - E.g.
+  ```yaml
+  aws_multi_az:
+  	us-east-1a: subnet-aaaaaaaaaaaaaaaaa
+  	us-east-1b: subnet-bbbbbbbbbbbbbbbbb
+  	us-east-1c: subnet-ccccccccccccccccc
+  ```
 - **default_ratio** - Override the default ratio of RAM to CPU if the user does not provide one. Must be a list of the minimum and maximum.
 	- default is [8, 8]
 - **ec2_amis** - A dictionary of dictionaries to store [AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) info.
@@ -95,6 +103,8 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	```
 - **forge_env** - Name of the Forge environment. The user will refer to this in their yaml.
 - **forge_pem_secret** - The secret name where the `ec2_key` is stored
+- **on_demand_failover** - If using engine mode and all spot attempts (market: spot + spot retries) have failed, run a final attempt using on-demand.
+- **spot_retries** - If using engine mode, sets the number of times to retry a spot instance. Only retries if either market is spot.
 - **tags** - [Tags](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html) to apply to instances created by Forge. Follows the AWS tag format. 
 	- Forge also exposes all string, numeric, and some extra variables from the combined user and environmental configs that will be replaced at runtime by the matching values (e.g. `{name}` for job name, `{date}` for job date, etc.) See the [variables](variables.md) page for more details.
 	- E.g.

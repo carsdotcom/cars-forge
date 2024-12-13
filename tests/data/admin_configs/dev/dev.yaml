@@ -1,6 +1,6 @@
 forge_env: dev
 aws_profile: data-dev
-aws_az: us-east-1a
+aws_region: us-east-1
 ec2_amis:
   single:
     - ami-123
@@ -14,9 +14,9 @@ ec2_amis:
     - ami-789
     - 90
     - /dev/sda1
-aws_subnet: subnet-123
+aws_multi_az:
+  us-east-1a: subnet-123
 ec2_key: bdp
-aws_security_group: sg-123
 forge_pem_secret: forge-pem
 excluded_ec2s: ["t2.medium","t2.large","m4.large", "*g.*", "gd.*", "*metal*", "g4ad*"]
 tags:
