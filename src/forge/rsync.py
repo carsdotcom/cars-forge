@@ -28,6 +28,8 @@ def cli_rsync(subparsers):
     add_action_args(parser)
     add_env_args(parser)
 
+    parser.add_argument('-rC', '--rclone', action='store_true', help='use rclone instead of rsync')
+
     REQUIRED_ARGS['rsync'] = ['name',
                               'service',
                               'forge_env',
@@ -89,6 +91,37 @@ def rsync(config):
                 logger.error('Rsync failed:\n%s', exc.output)
                 return exc.returncode
 
+    def _rclone(config, ip):
+        """performs an rclone to a given ip
+
+        Parameters
+        ----------
+        config : dict
+            Forge configuration data
+        ip : str
+            IP of the instance to rsync to
+        """
+        pem_secret = config['forge_pem_secret']
+        region = config['region']
+        profile = config.get('aws_profile')
+        rsync_loc = config.get('rsync_path', config.get('app_dir'))
+
+        with key_file(pem_secret, region, profile) as pem_path:
+            logger.info('Copying source %s to EC2.', rsync_loc)
+
+            cmd = f'rclone sync -v --sftp-ssh "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+            cmd += f' -i {pem_path} root@{ip}" --s3-provider AWS --s3-profile "{profile}" --s3-env-auth :{rsync_loc} :sftp:/root/'
+
+            try:
+                output = subprocess.check_output(
+                    cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True
+                )
+                logger.info('Rclone successful:\n%s', output)
+                return 0
+            except subprocess.CalledProcessError as exc:
+                logger.error('Rclone failed:\n%s', exc.output)
+                return exc.returncode
+
     n_list = get_nlist(config)
 
     for n in n_list:
@@ -103,7 +136,7 @@ def rsync(config):
 
             for ip, _ in targets:
                 logger.info('Rsync destination is %s', ip)
-                rval = _rsync(config, ip)
+                rval = _rclone(config, ip) if config.get('rclone') else _rsync(config, ip)
                 if rval:
                     raise ValueError('Rsync command unsuccessful, ending attempts.')
         except ValueError as e:
