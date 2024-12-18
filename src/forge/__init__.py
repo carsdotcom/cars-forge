@@ -1,4 +1,4 @@
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 # Default values for forge's essential arguments
 DEFAULT_ARG_VALS = {
