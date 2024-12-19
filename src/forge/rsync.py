@@ -28,7 +28,7 @@ def cli_rsync(subparsers):
     add_action_args(parser)
     add_env_args(parser)
 
-    parser.add_argument('-rC', '--rclone', action='store_true', help='use rclone instead of rsync')
+    parser.add_argument('-s3', action='store_true', help='Move from s3 instead of local')
 
     REQUIRED_ARGS['rsync'] = ['name',
                               'service',
@@ -136,7 +136,7 @@ def rsync(config):
 
             for ip, _ in targets:
                 logger.info('Rsync destination is %s', ip)
-                rval = _rclone(config, ip) if config.get('rclone') else _rsync(config, ip)
+                rval = _rclone(config, ip) if config.get('s3') else _rsync(config, ip)
                 if rval:
                     raise ValueError('Rsync command unsuccessful, ending attempts.')
         except ValueError as e:
