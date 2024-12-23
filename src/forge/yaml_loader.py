@@ -145,7 +145,7 @@ def check_user_yaml(user_yaml, additional_config: list = None):
         Optional('on_demand_failover'): And(bool),
         Optional('ratio'): And(list),
         Optional('ram'): And(list, error='Invalid RAM'),
-        Optional('s3'): And(bool, error='Invalid s3 flag'),
+        Optional('rclone_path'): And(str),
         Optional('rsync_path'): And(str),
         Optional('run_cmd'): And(str, len, error='Invalid run_cmd'),
         Optional('service'): And(str, len, Or('single', 'cluster'), error='Invalid Service'),

@@ -13,6 +13,7 @@ from .rsync import cli_rsync, rsync
 from .run import cli_run, run
 from .ssh import cli_ssh, ssh
 from .configure import cli_configure, configure, check_env_yaml
+from .s3_sync import cli_s3_sync, s3_sync
 from .stop import cli_stop, stop
 from .start import cli_start, start
 from .yaml_loader import load_config
@@ -22,6 +23,7 @@ available_subcommands = [
     cli_create,
     cli_destroy,
     cli_rsync,
+    cli_s3_sync,
     cli_run,
     cli_engine,
     cli_configure,
@@ -84,6 +86,8 @@ def execute(config):
         destroy(config)
     elif job == 'rsync':
         status = rsync(config)
+    elif job == 's3-sync':
+        status = s3_sync(config)
     elif job == 'run':
         status = run(config)
     elif job == 'engine':

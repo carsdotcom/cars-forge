@@ -13,7 +13,7 @@ from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
 logger = logging.getLogger(__name__)
 
 
-def cli_rsync(subparsers):
+def cli_s3_sync(subparsers):
     """adds rsync parser to subparser
 
     Parameters
@@ -21,20 +21,20 @@ def cli_rsync(subparsers):
     subparsers : argparse.ArgumentParser
         Argument parser for Forge.main
     """
-    parser = subparsers.add_parser('rsync', description='Rsync user content to EC2 instance')
+    parser = subparsers.add_parser('s3-sync', description='Rclone user content to EC2 instance')
     add_basic_args(parser)
 
     add_general_args(parser)
     add_action_args(parser)
     add_env_args(parser)
 
-    REQUIRED_ARGS['rsync'] = ['name',
+    REQUIRED_ARGS['s3_sync'] = ['name',
                               'service',
                               'forge_env',
                               'rsync_path']
 
 
-def rsync(config):
+def s3_sync(config):
     """rsyncs the file at rsync_path to the instance
 
     Parameters
@@ -51,8 +51,8 @@ def rsync(config):
     destroy_flag = config.get('destroy_after_failure')
     rval = 0
 
-    def _rsync(config, ip):
-        """performs the rsync to a given ip
+    def _rclone(config, ip):
+        """performs an rclone to a given ip
 
         Parameters
         ----------
@@ -64,36 +64,29 @@ def rsync(config):
         pem_secret = config['forge_pem_secret']
         region = config['region']
         profile = config.get('aws_profile')
-        rsync_loc = config.get('rsync_path', config.get('app_dir'))
+        rsync_loc = config.get('rclone_path', config.get('app_dir'))
 
         with key_file(pem_secret, region, profile) as pem_path:
-            if os.path.isdir(rsync_loc):
-                logger.info('Copying folder %s to EC2.', rsync_loc)
-                rsync_loc += '/*'
-            elif os.path.isfile(rsync_loc):
-                logger.info('Copying file %s to EC2.', rsync_loc)
-            else:
-                logger.error("File or folder from 'rsync_path' parameter not found: %s", rsync_loc)
-                sys.exit(1)
+            logger.info('Copying source %s to EC2.', rsync_loc)
 
-            cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
-            cmd += f' -i {pem_path}" {rsync_loc} root@{ip}:/root/'
+            cmd = f'rclone sync -v --sftp-ssh "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+            cmd += f' -i {pem_path} root@{ip}" --s3-provider AWS --s3-profile "{profile}" --s3-env-auth :{rsync_loc} :sftp:/root/'
 
             try:
                 output = subprocess.check_output(
                     cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True
                 )
-                logger.info('Rsync successful:\n%s', output)
+                logger.info('Rclone successful:\n%s', output)
                 return 0
             except subprocess.CalledProcessError as exc:
-                logger.error('Rsync failed:\n%s', exc.output)
+                logger.error('Rclone failed:\n%s', exc.output)
                 return exc.returncode
 
     n_list = get_nlist(config)
 
     for n in n_list:
         try:
-            logger.info('Trying to rsync to %s...', n)
+            logger.info('Trying to rclone to %s...', n)
             details = ec2_ip(n, config)
             targets = get_ip(details, ('running',))
             logger.debug('Instance target details are %s', targets)
@@ -102,12 +95,12 @@ def rsync(config):
                 continue
 
             for ip, _ in targets:
-                logger.info('Rsync destination is %s', ip)
-                rval = _rsync(config, ip)
+                logger.info('Rclone destination is %s', ip)
+                rval = _rclone(config, ip)
                 if rval:
                     raise ValueError('Rsync command unsuccessful, ending attempts.')
         except ValueError as e:
-            logger.error('Got error %s when trying to rsync.', e)
+            logger.error('Got error %s when trying to rclone.', e)
             try:
                 exit_callback(config)
             except ExitHandlerException:
