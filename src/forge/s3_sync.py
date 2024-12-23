@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def cli_s3_sync(subparsers):
-    """adds rsync parser to subparser
+    """adds s3-sync parser to subparser
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ def cli_s3_sync(subparsers):
 
 
 def s3_sync(config):
-    """rsyncs the file at rsync_path to the instance
+    """rclones the file at rclone_path to the instance
 
     Parameters
     ----------
@@ -47,8 +47,6 @@ def s3_sync(config):
     int
         The status of the rsync commands
     """
-
-    destroy_flag = config.get('destroy_after_failure')
     rval = 0
 
     def _rclone(config, ip):
