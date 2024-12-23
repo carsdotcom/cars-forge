@@ -13,7 +13,7 @@ from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
 logger = logging.getLogger(__name__)
 
 
-def cli_s3_sync(subparsers):
+def cli_sync(subparsers):
     """adds s3-sync parser to subparser
 
     Parameters
@@ -21,7 +21,7 @@ def cli_s3_sync(subparsers):
     subparsers : argparse.ArgumentParser
         Argument parser for Forge.main
     """
-    parser = subparsers.add_parser('s3-sync', description='Rclone user content to EC2 instance')
+    parser = subparsers.add_parser('sync', description='Rclone user content to EC2 instance')
     add_basic_args(parser)
 
     add_general_args(parser)
@@ -62,7 +62,7 @@ def s3_sync(config):
         pem_secret = config['forge_pem_secret']
         region = config['region']
         profile = config.get('aws_profile')
-        rsync_loc = config.get('rclone_path', config.get('app_dir'))
+        rsync_loc = config.get('sync_path', config.get('app_dir'))
 
         with key_file(pem_secret, region, profile) as pem_path:
             logger.info('Copying source %s to EC2.', rsync_loc)
@@ -74,29 +74,29 @@ def s3_sync(config):
                 output = subprocess.check_output(
                     cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True
                 )
-                logger.info('Rclone successful:\n%s', output)
+                logger.info('Sync successful:\n%s', output)
                 return 0
             except subprocess.CalledProcessError as exc:
-                logger.error('Rclone failed:\n%s', exc.output)
+                logger.error('Sync failed:\n%s', exc.output)
                 return exc.returncode
 
     n_list = get_nlist(config)
 
     for n in n_list:
         try:
-            logger.info('Trying to rclone to %s...', n)
+            logger.info('Trying to sync to %s...', n)
             details = ec2_ip(n, config)
             targets = get_ip(details, ('running',))
             logger.debug('Instance target details are %s', targets)
             if not targets or len(targets[0]) != 2:
-                logger.error('Could not find any valid instances to rsync to')
+                logger.error('Could not find any valid instances to sync to')
                 continue
 
             for ip, _ in targets:
-                logger.info('Rclone destination is %s', ip)
+                logger.info('Sync destination is %s', ip)
                 rval = _rclone(config, ip)
                 if rval:
-                    raise ValueError('Rsync command unsuccessful, ending attempts.')
+                    raise ValueError('Sync command unsuccessful, ending attempts.')
         except ValueError as e:
             logger.error('Got error %s when trying to rclone.', e)
             try:

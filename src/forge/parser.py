@@ -142,7 +142,7 @@ def add_action_args(parser):
     """
     action_grp = parser.add_argument_group('Action Arguments')
     action_grp.add_argument('--rsync_path', '--rsync-path')
-    action_grp.add_argument('--rclone_path', '--rclone-path')
+    action_grp.add_argument('--sync_path', '--rclone-path')
     action_grp.add_argument('--run_cmd', '--run-cmd')
     action_grp.add_argument('--all', action='store_true', dest='rr_all')
 
