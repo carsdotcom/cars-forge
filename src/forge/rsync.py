@@ -1,8 +1,13 @@
 """Rsync user content to EC2 instance."""
 import logging
 import os
+import re
 import subprocess
 import sys
+import tempfile
+from doctest import debug
+
+import boto3
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .destroy import destroy
@@ -89,6 +94,48 @@ def rsync(config):
                 logger.error('Rsync failed:\n%s', exc.output)
                 return exc.returncode
 
+    def _s3_rsync(config, ip):
+        """downloads a file from S3 and performs a rsync to a given ip
+
+        Parameters
+        ----------
+        config : dict
+            Forge configuration data
+        ip : str
+            IP of the instance to rsync to
+        """
+
+        rval = 0
+
+        s3_loc = config.get('s3_path')
+
+        logger.debug('S3 path: %s', s3_loc)
+
+        s3_uri_pattern = r'(?:s3\:/)?/?(?P<bucket>\S+?)/(?P<key>\S+)'
+
+        match = re.match(s3_uri_pattern, s3_loc)
+        if match:
+            bucket = match.group('bucket')
+            key = match.group('key')
+            name = key.split('/')[-1]
+
+            local_path = f'/tmp/{name}'
+
+            logger.debug('Downloading file from S3 to %s', local_path)
+
+            s3 = boto3.resource('s3')
+            s3.Object(bucket, key).download_file(local_path)
+
+            logger.debug('Successfully downloaded file %s', local_path)
+
+            rval += _rsync({**config, 'rsync_path': local_path}, ip)
+
+            os.remove(local_path)
+        else:
+            rval += 1
+
+        return rval
+
     n_list = get_nlist(config)
 
     for n in n_list:
@@ -104,6 +151,11 @@ def rsync(config):
             for ip, _ in targets:
                 logger.info('Rsync destination is %s', ip)
                 rval = _rsync(config, ip)
+
+                if config.get('s3_path'):
+                    logger.info('S3 rsync destination is %s', ip)
+                    rval += _s3_rsync(config, ip)
+
                 if rval:
                     raise ValueError('Rsync command unsuccessful, ending attempts.')
         except ValueError as e:
