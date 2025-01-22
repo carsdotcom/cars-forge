@@ -148,9 +148,9 @@ def rsync(config):
                 continue
 
             for ip, _ in targets:
-                if config.get('rsunc_path'):
+                if config.get('rsync_path'):
                     logger.info('Rsync destination is %s', ip)
-                    rval = _rsync(config, ip)
+                    rval += _rsync(config, ip)
 
                 if config.get('s3_path'):
                     logger.info('S3 rsync destination is %s', ip)
