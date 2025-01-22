@@ -35,8 +35,7 @@ def cli_rsync(subparsers):
 
     REQUIRED_ARGS['rsync'] = ['name',
                               'service',
-                              'forge_env',
-                              'rsync_path']
+                              'forge_env',]
 
 
 def rsync(config):
@@ -149,8 +148,9 @@ def rsync(config):
                 continue
 
             for ip, _ in targets:
-                logger.info('Rsync destination is %s', ip)
-                rval = _rsync(config, ip)
+                if config.get('rsunc_path'):
+                    logger.info('Rsync destination is %s', ip)
+                    rval = _rsync(config, ip)
 
                 if config.get('s3_path'):
                     logger.info('S3 rsync destination is %s', ip)
