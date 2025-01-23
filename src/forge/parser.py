@@ -110,27 +110,33 @@ def add_basic_args(parser):
     parser.add_argument('--market', nargs='+', choices={'spot', 'on-demand'})
 
 
-def add_job_args(parser):
+def add_job_args(parser, *, suppress: bool = False):
     """adds job arguments to parser
 
     Parameters
     ----------
     parser : argparse.ArgumentParser
         Argument parser for Forge.main
+    suppress : bool, optional
+        Whether the argument should be suppressed in help messages
     """
+    help_message = None
+    if suppress:
+        help_message = argparse.SUPPRESS
+
     common_grp = parser.add_argument_group('Common job arguments')
-    common_grp.add_argument('--ram', type=list_string)
-    common_grp.add_argument('--cpu', type=list_string)
-    common_grp.add_argument('--ratio', type=list_string)
-    common_grp.add_argument('--aws_role', '--aws-role')
-    common_grp.add_argument('--disk', type=positive_int_arg)
-    common_grp.add_argument('--valid_time', '--valid-time', type=positive_int_arg)
-    common_grp.add_argument('--user_data', '--user-data', nargs='*')
-    common_grp.add_argument('--gpu', action='store_true', dest='gpu_flag', default=None)
-    common_grp.add_argument('--destroy_on_create', '--destroy-on-create', action='store_true', default=None)
+    common_grp.add_argument('--ram', type=list_string, help=help_message)
+    common_grp.add_argument('--cpu', type=list_string, help=help_message)
+    common_grp.add_argument('--ratio', type=list_string, help=help_message)
+    common_grp.add_argument('--aws_role', '--aws-role', help=help_message)
+    common_grp.add_argument('--disk', type=positive_int_arg, help=help_message)
+    common_grp.add_argument('--valid_time', '--valid-time', type=positive_int_arg, help=help_message)
+    common_grp.add_argument('--user_data', '--user-data', nargs='*', help=help_message)
+    common_grp.add_argument('--gpu', action='store_true', dest='gpu_flag', default=None, help=help_message)
+    common_grp.add_argument('--destroy_on_create', '--destroy-on-create', action='store_true', default=None, help=help_message)
 
 
-def add_action_args(parser):
+def add_action_args(parser, *, suppress: bool = False):
     """add action arguments to the parser
 
     These don't create nor destroy jobs, but are used to do things on existing instances
@@ -139,11 +145,17 @@ def add_action_args(parser):
     ----------
     parser : argparse.ArgumentParser
         Argument parser for Forge.main
+    suppress : bool, optional
+        Whether the argument should be suppressed in help messages
     """
+    help_message = None
+    if suppress:
+        help_message = argparse.SUPPRESS
+
     action_grp = parser.add_argument_group('Action Arguments')
-    action_grp.add_argument('--rsync_path', '--rsync-path')
-    action_grp.add_argument('--run_cmd', '--run-cmd')
-    action_grp.add_argument('--all', action='store_true', dest='rr_all')
+    action_grp.add_argument('--rsync_path', '--rsync-path', help=help_message)
+    action_grp.add_argument('--run_cmd', '--run-cmd', help=help_message)
+    action_grp.add_argument('--all', action='store_true', dest='rr_all', help=help_message)
 
 
 def add_env_args(parser):

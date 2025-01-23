@@ -7,7 +7,7 @@ import sys
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .destroy import destroy
 from .exceptions import ExitHandlerException
-from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
+from .parser import add_basic_args, add_general_args, add_env_args, add_action_args, add_job_args
 from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ def cli_rsync(subparsers):
     add_basic_args(parser)
 
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
     add_action_args(parser)
     add_env_args(parser)
 
