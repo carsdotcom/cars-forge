@@ -137,6 +137,10 @@ def rsync(config):
 
     n_list = get_nlist(config)
 
+    if not config.get('rsync_path') and not config.get('s3_path'):
+        logger.error('No rsync_path or s3_path specified, exiting')
+        sys.exit(1)
+
     for n in n_list:
         try:
             logger.info('Trying to rsync to %s...', n)
