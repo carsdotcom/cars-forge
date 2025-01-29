@@ -131,9 +131,6 @@ def main():
 
         config.validate()
 
-        # Reset logging with user-defined level, if set
-        logger.setLevel(config.log_level)
-
         # Set default boto3 session
         if config.aws_profile:
             boto3.setup_default_session(profile_name=config.aws_profile, region_name=config.region)
@@ -143,6 +140,7 @@ def main():
         config = args
 
     config.log_level = config.log_level or DEFAULT_ARG_VALS['log_level']
+    logger.setLevel(config.log_level)
 
     logger.debug('config is %s', config)
 

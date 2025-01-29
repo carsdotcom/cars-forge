@@ -254,8 +254,8 @@ def destroy_hook(exctype, value, tb):
     from .destroy import destroy
 
     logger.critical('Unhandled exception of type %s caught with value %s.', exctype, value)
-    config = tb.tb_next.tb_frame.f_locals.get('config')
-    if config.get('destroy_after_failure'):
+    config: Configuration = tb.tb_next.tb_frame.f_locals.get('config')
+    if config.destroy_after_failure:
         destroy(config)
         logger.critical('Destroyed target instances due to exception.')
 

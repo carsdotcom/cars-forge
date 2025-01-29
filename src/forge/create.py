@@ -13,8 +13,7 @@ from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_job_args, add_env_args, add_general_args, add_action_args
-from .common import (ec2_ip, destroy_hook, set_boto_session, exit_callback,
-                     user_accessible_vars, FormatEmpty, get_ec2_pricing)
+from .common import ec2_ip, destroy_hook, exit_callback, user_accessible_vars, FormatEmpty, get_ec2_pricing
 from .configuration import Configuration
 from .destroy import destroy
 
@@ -150,11 +149,7 @@ def create_status(n, request, config: Configuration):
     config : Configuration
         Forge configuration data
     """
-    profile = config.aws_profile
-    region = config.region
     destroy_flag = config.destroy_after_failure
-
-    set_boto_session(region, profile)
 
     client = boto3.client('ec2')
 
@@ -697,6 +692,7 @@ def get_instance_details(config: Configuration, task_list):
     task_list : list
         Forge services to get details of
     """
+    service = config.service
     ram = config.ram
     cpu = config.cpu
     ratio = config.ratio
@@ -760,11 +756,6 @@ def create(config: Configuration):
         Forge configuration data
     """
     sys.excepthook = destroy_hook
-
-    profile = config.aws_profile
-    region = config.region
-
-    set_boto_session(region, profile)
 
     service = config.service
     task_list = ['single']

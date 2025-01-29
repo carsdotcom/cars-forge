@@ -2,10 +2,8 @@
 import ast
 import logging
 import os
-import sys
 
 import yaml
-from schema import Schema, And, Optional, Or, SchemaError, Use
 
 from .common import set_config_dir
 

@@ -4,13 +4,10 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
-from doctest import debug
 
 import boto3
 
-from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
-from .destroy import destroy
+from . import REQUIRED_ARGS
 from .exceptions import ExitHandlerException
 from .parser import add_basic_args, add_general_args, add_env_args, add_action_args, add_job_args
 from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
@@ -54,7 +51,6 @@ def rsync(config: Configuration):
         The status of the rsync commands
     """
 
-    destroy_flag = config.get('destroy_after_failure')
     rval = 0
 
     def _rsync(config: Configuration, ip):
@@ -95,12 +91,12 @@ def rsync(config: Configuration):
                 logger.error('Rsync failed:\n%s', exc.output)
                 return exc.returncode
 
-    def _s3_rsync(config, ip):
+    def _s3_rsync(config: Configuration, ip):
         """downloads a file from S3 and performs a rsync to a given ip
 
         Parameters
         ----------
-        config : dict
+        config : Configuration
             Forge configuration data
         ip : str
             IP of the instance to rsync to
@@ -129,7 +125,10 @@ def rsync(config: Configuration):
 
             logger.debug('Successfully downloaded file %s', local_path)
 
-            rval += _rsync({**config, 'rsync_path': local_path}, ip)
+            s3_config = config
+            s3_config.rsync_path = local_path
+
+            rval += _rsync(s3_config, ip)
 
             os.remove(local_path)
         else:

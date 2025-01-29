@@ -41,8 +41,8 @@ class Configuration:
     cpu: Optional[MachineSpec] = None
     create_timeout: Optional[int] = None
     date: Optional[str] = None
-    destroy_after_success: Optional[bool] = None
-    destroy_after_failure: Optional[bool] = None
+    destroy_after_success: Optional[bool] = True
+    destroy_after_failure: Optional[bool] = True
     destroy_on_create: Optional[bool] = None
     disk: Optional[int] = None
     disk_device_name: Optional[str] = None
@@ -60,6 +60,7 @@ class Configuration:
     rr_all: Optional[bool] = None
     rsync_path: Optional[str] = None
     run_cmd: Optional[str] = None
+    s3_path: Optional[str] = None
     service: Optional[Literal['single', 'cluster']] = None
     spot_retries: Optional[int] = None
     spot_strategy: Optional[Literal['lowest-price', 'diversified', 'capacity-optimized', 'capacity-optimized-prioritized', 'price-capacity-optimized']] = 'price-capacity-optimized'

@@ -64,7 +64,6 @@ def engine(config: Configuration):
     except ExitHandlerException:
         # Check for spot instances and retries
         if 'spot' in config.market:
-
             name = config.name
             date = config.date or ''
             market = config.market or DEFAULT_ARG_VALS['market']

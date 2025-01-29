@@ -51,11 +51,8 @@ def run(config: Configuration):
     sys.excepthook = destroy_hook
 
     # run the run script on the single or master
-    name = config.name
-    date = config.date or ''
     service = config.service
     market = config.market or DEFAULT_ARG_VALS['market']
-    rr_all = config.rr_all
     destroy_flag = config.destroy_after_failure
     rval = 0
     task = service
