@@ -110,6 +110,19 @@ class Configuration:
     def __iter__(self):
         return iter(self.__dict__)
 
+    def clone(self):
+        tmp = Configuration(
+            region=self.region,
+            ec2_amis=self.ec2_amis,
+            ec2_key=self.ec2_key,
+            forge_env=self.forge_env,
+            forge_pem_secret=self.forge_pem_secret,
+            job=self.job,
+        )
+
+        tmp.update(self.__dict__)
+        return tmp
+
     def copy(self):
         return self.__dict__.copy()
 

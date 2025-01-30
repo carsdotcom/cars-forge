@@ -125,7 +125,7 @@ def rsync(config: Configuration):
 
             logger.debug('Successfully downloaded file %s', local_path)
 
-            s3_config = config
+            s3_config = config.clone()
             s3_config.rsync_path = local_path
 
             rval += _rsync(s3_config, ip)

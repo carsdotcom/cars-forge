@@ -78,5 +78,8 @@ def stop(config: Configuration):
         logger.error('Master or worker is a spot instance; you cannot stop a spot instance')
         # sys.exit(1)  # ToDo: Should we change the tests to reflect an exit or allow it to continue?
 
-    n_list = get_nlist(Configuration({**config.__dict__, 'rr_all': True}))
+    stop_config = config.clone()
+    stop_config.rr_all = True
+
+    n_list = get_nlist(stop_config)
     stop_fleet(n_list, config)
