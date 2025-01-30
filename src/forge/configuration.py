@@ -41,21 +41,21 @@ class Configuration:
     cpu: Optional[MachineSpec] = None
     create_timeout: Optional[int] = None
     date: Optional[str] = None
-    destroy_after_success: Optional[bool] = True
-    destroy_after_failure: Optional[bool] = True
+    destroy_after_success: Optional[bool] = DEFAULT_ARG_VALS['destroy_after_success']
+    destroy_after_failure: Optional[bool] = DEFAULT_ARG_VALS['destroy_after_failure']
     destroy_on_create: Optional[bool] = None
     disk: Optional[int] = None
     disk_device_name: Optional[str] = None
-    ec2_max: Optional[int] = 768
+    ec2_max: Optional[int] = DEFAULT_ARG_VALS['ec2_max']
     excluded_ec2s: Optional[list] = None
     gpu_flag: Optional[bool] = None
     home_dir: Optional[str] = None
-    log_level: Optional[Literal['DEBUG', 'INFO', 'WARNING', 'ERROR']] = 'INFO'
-    market: Optional[Union[str, list[str]]] = field(default_factory=lambda: ['spot', 'spot'])
+    log_level: Optional[Literal['DEBUG', 'INFO', 'WARNING', 'ERROR']] = DEFAULT_ARG_VALS['log_level']
+    market: Optional[Union[str, list[str]]] = field(default_factory=lambda: DEFAULT_ARG_VALS['market'])
     market_failover: Optional[bool] = None  # ToDo: Remove
     name: Optional[str] = None
     on_demand_failover: Optional[bool] = None
-    ratio: Optional[MachineSpec] = field(default_factory=lambda: [8, 8])
+    ratio: Optional[MachineSpec] = field(default_factory=lambda: DEFAULT_ARG_VALS['default_ratio'])
     ram: Optional[MachineSpec] = None
     rr_all: Optional[bool] = None
     rsync_path: Optional[str] = None
@@ -63,12 +63,12 @@ class Configuration:
     s3_path: Optional[str] = None
     service: Optional[Literal['single', 'cluster']] = None
     spot_retries: Optional[int] = None
-    spot_strategy: Optional[Literal['lowest-price', 'diversified', 'capacity-optimized', 'capacity-optimized-prioritized', 'price-capacity-optimized']] = 'price-capacity-optimized'
+    spot_strategy: Optional[Literal['lowest-price', 'diversified', 'capacity-optimized', 'capacity-optimized-prioritized', 'price-capacity-optimized']] = DEFAULT_ARG_VALS['spot_strategy']
     src_dir: Optional[str] = None
     tags: Optional[list[dict]] = None
     user: Optional[str] = None
     user_data: Optional[Union[dict, list]] = None
-    valid_time: Optional[int] = 8
+    valid_time: Optional[int] = DEFAULT_ARG_VALS['valid_time']
     workers: Optional[int] = None
     yaml: Optional[str] = None
     yaml_dir: Optional[str] = None
