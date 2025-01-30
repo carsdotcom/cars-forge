@@ -76,6 +76,7 @@ Each forge command certain parameters. A yaml file with all the parameters can b
 - **run_cmd** - The command that will be ran on the master or single instance. The path is relative to `rsync_path`. Any arguments will be passed to the script as is. Special variables `{env}`, `{date}`, and `{ip}` are available and will be replaced at runtime by the instance values. All commands will run as the root user.
     - Use the `--all` flag to run the script on all the instances in a cluster.
     - E.g. `run_cmd: scripts/run.sh {env} {date} {ip}`
+- **s3_path** - An AWS S3 URI to rsync to the Forge instance. Downloads the file locally and sends it to the instance.
 - **service** - `cluster` or `single`
 - **spot_strategy** - Select the [spot allocation strategy](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2/client/create_fleet.html).
 - **spot_retries** - If using engine mode, sets the number of times to retry a spot instance. Only retries if either market is spot.

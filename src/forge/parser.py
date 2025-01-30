@@ -154,6 +154,7 @@ def add_action_args(parser, *, suppress: bool = False):
 
     action_grp = parser.add_argument_group('Action Arguments')
     action_grp.add_argument('--rsync_path', '--rsync-path', help=help_message)
+    action_grp.add_argument('--s3_path', '--s3-path', help=help_message)
     action_grp.add_argument('--run_cmd', '--run-cmd', help=help_message)
     action_grp.add_argument('--all', action='store_true', dest='rr_all', help=help_message)
 

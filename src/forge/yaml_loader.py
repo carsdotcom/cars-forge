@@ -149,6 +149,7 @@ def check_user_yaml(user_yaml, additional_config: list = None):
         Optional('run_cmd'): And(str, len, error='Invalid run_cmd'),
         Optional('service'): And(str, len, Or('single', 'cluster'), error='Invalid Service'),
         Optional('spot_retries'): And(Use(int), positive_int),
+        Optional('s3_path'): And(str),
         Optional('user_data'): And(list),
         Optional('valid_time'): And(Use(int), positive_int),
         Optional('workers'): And(Use(int), positive_int),
