@@ -48,7 +48,7 @@ class Configuration:
     disk_device_name: Optional[str] = None
     ec2_max: Optional[int] = DEFAULT_ARG_VALS['ec2_max']
     excluded_ec2s: Optional[list] = None
-    gpu_flag: Optional[bool] = None
+    gpu_flag: Optional[bool] = DEFAULT_ARG_VALS['gpu_flag']
     home_dir: Optional[str] = None
     log_level: Optional[Literal['DEBUG', 'INFO', 'WARNING', 'ERROR']] = DEFAULT_ARG_VALS['log_level']
     market: Optional[Union[str, list[str]]] = field(default_factory=lambda: DEFAULT_ARG_VALS['market'])
@@ -289,9 +289,14 @@ class Configuration:
             if ec2_max:
                 DEFAULT_ARG_VALS['ec2_max'] = ec2_max
         else:
-            ram = config_dict['ram'] = _parse_list(ram)
-            cpu = config_dict['cpu'] = _parse_list(cpu)
-            ratio = config_dict['ratio'] = _parse_list(ratio)
+            if ram := _parse_list(ram):
+                config_dict['ram'] = ram
+
+            if cpu := _parse_list(cpu):
+                config_dict['cpu'] = cpu
+
+            if ratio := _parse_list(ratio):
+                config_dict['ratio'] = ratio
 
             market = config_dict.get('market')
             if market and isinstance(market, str):
@@ -302,16 +307,22 @@ class Configuration:
 
                 if ram and len(ram) != min_values:
                     logger.error('ram must have %s values for service %s', min_values, service)
+                    sys.exit(1)
                 if cpu and len(cpu) != min_values:
                     logger.error('cpu must have %s values for service %s', min_values, service)
+                    sys.exit(1)
                 if ratio and len(ratio) != min_values:
                     logger.error('ratio must have %s values for service %s', min_values, service)
+                    sys.exit(1)
 
         # Random checks and transformations to conform to Forge's quirks
         if excluded_ec2s := cli_config.get('excluded_ec2s'):
             config_dict['excluded_ec2s'] = list(sorted(set(config_dict['excluded_ec2s'] + cli_config['excluded_ec2s'])))
 
-        config_dict['aws_role'] = '-'.join(filter(None, ['forge', config_dict['aws_role'], forge_env]))
+        if not config_dict.get('aws_role'):
+            logger.warning('No aws_role specified, continuing...')
+        else:
+            config_dict['aws_role'] = '-'.join(filter(None, ['forge', config_dict['aws_role'], forge_env]))
 
         # Create configuration
         config = Configuration(**config_dict)
@@ -329,6 +340,7 @@ class Configuration:
         if self.job in ['create', 'destroy', 'engine', 'rsync', 'run', 'ssh', 'start', 'stop']:
             for requisite in REQUIRED_ARGS[self.job]:
                 if not self[requisite]:
+                    logger.error('Missing required argument "%s" for job "%s"', requisite, self.job)
                     return False
 
         return True

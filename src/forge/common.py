@@ -290,27 +290,6 @@ def set_config_dir(args, forge_env=''):
     return config_dir
 
 
-def check_keys(region, profile=None):
-    """validates that AWS keys are valid
-
-    Parameters
-    ----------
-    region : str
-        AWS region
-    profile : str, optional
-        AWS CLI profile
-    """
-    try:
-        session = boto3.session.Session(profile_name=profile, region_name=region) if profile else boto3.session.Session(region_name=region)
-        session.client('sts').get_caller_identity()
-    except NoCredentialsError:
-        logger.error("Missing AWS credentials to run Forge")
-        sys.exit(1)
-    except ClientError:
-        logger.error("Invalid AWS credentials to run Forge")
-        sys.exit(1)
-
-
 class FormatEmpty(string.Formatter):
     """formatter class to put blank strings instead of an error when kwargs don't exist
 

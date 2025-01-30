@@ -129,7 +129,11 @@ def main():
     if args['job'] != 'configure':
         config: Configuration = Configuration.load_config(args)
 
-        config.validate()
+        if not config.validate():
+            sys.exit(1)
+
+        config.log_level = config.log_level or DEFAULT_ARG_VALS['log_level']
+        logger.setLevel(config.log_level)
 
         # Set default boto3 session
         if config.aws_profile:
@@ -138,9 +142,6 @@ def main():
             boto3.setup_default_session(region_name=config.region)
     else:
         config = args
-
-    config.log_level = config.log_level or DEFAULT_ARG_VALS['log_level']
-    logger.setLevel(config.log_level)
 
     logger.debug('config is %s', config)
 

@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 
 from forge import common
+from forge.configuration import Configuration
 
 
 TEST_DEFAULT_ARG_VALS = {
@@ -14,43 +15,24 @@ TEST_DEFAULT_ARG_VALS = {
 }
 TEST_ADDITIONAL_KEYS = ['fake', 'not_real']
 
-@mock.patch.dict('forge.common.DEFAULT_ARG_VALS', TEST_DEFAULT_ARG_VALS)
-@pytest.mark.parametrize('config,expected', [
-    # Overriding default ratio
-    ({'aws_az': 'us-east-1a', 'ratio': [6, 8]},
-     {'aws_az': 'us-east-1a', 'region': 'us-east-1'}),
-    # Regular config
-    ({'ram': ['8', [256, 512]], 'cpu': ['1, 2', '7,8'], 'aws_az': 'testing',
-      'market': 'on-demand, spot'},
-     {'ram': [[8], [256, 512]], 'cpu': [[1, 2], [7, 8]], 'aws_az': 'testing',
-      'region': 'testin', 'market': ['on-demand', 'spot'], 'ratio': None}),
-    # No-market config
-    ({'ram': ['8', [256, 512]], 'cpu': ['1, 2', '7,8']},
-     {'ram': [[8], [256, 512]], 'cpu': [[1, 2], [7, 8]], 'ratio': None}),
-])
-def test_normalize_config(config, expected):
-    """Test the normalization of config options."""
-    actual = common.normalize_config(config)
-    if config.get('ratio'):
-        assert config['ratio'] == common.DEFAULT_ARG_VALS['default_ratio']
+BASE_CONFIG = {
+    'region': 'us-east-1',
+    'ec2_amis': {},
+    'ec2_key': '',
+    'forge_env': 'dev',
+    'forge_pem_secret': '',
+    'job': 'configure'
+}
 
-    assert actual == expected
-
-
-@mock.patch.dict('forge.common.DEFAULT_ARG_VALS', TEST_DEFAULT_ARG_VALS)
-@pytest.mark.parametrize('config,additional_config,expected', [
-    ({},
-     [{'name': 'pip', 'type': 'list', 'default': [], 'constraints': []},
-      {'name': 'version', 'type': 'float', 'default': 2.3, 'constraints': [2.3, 3.0, 3.1]}],
-     {'version': 2.3})
-])
-def test_parse_additional_config(config, additional_config, expected):
-    """Test the normalization of config options."""
-    actual = common.parse_additional_config(config, additional_config)
-    if config.get('ratio'):
-        assert config['ratio'] == common.DEFAULT_ARG_VALS['default_ratio']
-
-    assert actual == expected
+DEFAULTS = {
+    'destroy_after_failure': True,
+    'destroy_after_success': True,
+    'ec2_max': 768,
+    'log_level': 'INFO',
+    'spot_strategy': 'price-capacity-optimized',
+    'valid_time': 8,
+    'gpu_flag': False
+}
 
 
 @mock.patch.dict('forge.common.DEFAULT_ARG_VALS', TEST_DEFAULT_ARG_VALS, clear=True)
@@ -87,8 +69,14 @@ def test_parse_additional_config(config, additional_config, expected):
 ])
 def test_user_accessible_vars(config, kwargs, expected):
     """Test creating the dict of user-accessible variables."""
-    actual = common.user_accessible_vars(config, **kwargs)
-    assert actual == expected
+    test_config = Configuration(**BASE_CONFIG)
+    test_config.update(config)
+
+    test_expected = {**DEFAULTS, **BASE_CONFIG, **expected}
+    test_expected.pop('ec2_amis')
+
+    actual = common.user_accessible_vars(test_config, **kwargs)
+    assert actual == test_expected
 
 
 @mock.patch('forge.common.boto3')
@@ -103,7 +91,7 @@ def test_get_ec2_pricing_spot(mock_dt, mock_boto):
     now = datetime(2022, 1, 1, 12, 0, 0)
     mock_dt.utcnow.return_value = now
 
-    config = {'aws_az': 'us-east-1a', 'region': 'us-east-1'}
+    config = Configuration(**{**BASE_CONFIG, 'aws_az': 'us-east-1a', 'region': 'us-east-1'})
     ec2_type = 'r5.large'
     act_price = common.get_ec2_pricing(ec2_type, 'spot', config)
     assert act_price == exp_price
@@ -137,7 +125,7 @@ def test_get_ec2_pricing_ondemand(mock_regions, mock_boto):
     mock_products.return_value = response
     mock_regions.return_value = {region: long_region}
 
-    config = {'region': region, 'aws_az': az}
+    config = Configuration(**{**BASE_CONFIG, 'region': region, 'aws_az': az})
     ec2_type = 'r5.large'
     act_price = common.get_ec2_pricing(ec2_type, 'on-demand', config)
     assert act_price == exp_price
