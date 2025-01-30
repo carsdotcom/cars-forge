@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - **S3 sync** - Allow files to be synced to the Forge instance from an S3 bucket
 
+### Changed
+- **Subcommand arguments** - Allowed CLI arguments from any subcommand to be specified for any other
+
 ## [1.1.1] - 2024-12-12
 
 ### Changed
