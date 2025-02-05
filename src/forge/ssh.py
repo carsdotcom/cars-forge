@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
-from .parser import add_basic_args, add_general_args, add_env_args
+from .parser import add_basic_args, add_general_args, add_env_args, add_job_args, add_action_args
 from .common import ec2_ip, key_file, get_ip
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,8 @@ def cli_ssh(subparsers):
     parser = subparsers.add_parser('ssh', description='SSH to EC2 instance')
     add_basic_args(parser)
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
+    add_action_args(parser, suppress=True)
     add_env_args(parser)
 
     REQUIRED_ARGS['ssh'] = ['name',

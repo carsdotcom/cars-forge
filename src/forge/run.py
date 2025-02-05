@@ -6,7 +6,7 @@ import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .exceptions import ExitHandlerException
-from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
+from .parser import add_basic_args, add_general_args, add_env_args, add_action_args, add_job_args
 from .common import ec2_ip, key_file, get_ip, destroy_hook, user_accessible_vars, FormatEmpty, exit_callback, get_nlist
 from .destroy import destroy
 
@@ -24,6 +24,7 @@ def cli_run(subparsers):
     parser = subparsers.add_parser('run', description='Run command on remote EC2')
     add_basic_args(parser)
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
     add_action_args(parser)
     add_env_args(parser)
 

@@ -12,7 +12,7 @@ import botocore.exceptions
 from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
-from .parser import add_basic_args, add_job_args, add_env_args, add_general_args
+from .parser import add_basic_args, add_job_args, add_env_args, add_general_args, add_action_args
 from .common import (ec2_ip, destroy_hook, set_boto_session, exit_callback,
                      user_accessible_vars, FormatEmpty, get_ec2_pricing)
 from .destroy import destroy
@@ -31,6 +31,7 @@ def cli_create(subparsers):
     parser = subparsers.add_parser('create', description='Create EC2')
     add_basic_args(parser)
     add_job_args(parser)
+    add_action_args(parser, suppress=True)
     add_env_args(parser)
     add_general_args(parser)
 

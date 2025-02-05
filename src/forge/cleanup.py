@@ -6,8 +6,7 @@ import boto3
 
 from . import REQUIRED_ARGS
 from .common import set_boto_session
-from .parser import add_basic_args, add_general_args, add_env_args
-
+from .parser import add_basic_args, add_general_args, add_env_args, add_job_args, add_action_args
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +22,8 @@ def cli_cleanup(subparsers):
     parser = subparsers.add_parser('cleanup', description='Cleanup EC2 launch templates')
     add_basic_args(parser)
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
+    add_action_args(parser, suppress=True)
     add_env_args(parser)
 
     REQUIRED_ARGS['cleanup'] = {'forge_env'}

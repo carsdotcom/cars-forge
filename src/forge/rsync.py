@@ -1,13 +1,18 @@
 """Rsync user content to EC2 instance."""
 import logging
 import os
+import re
 import subprocess
 import sys
+import tempfile
+from doctest import debug
+
+import boto3
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .destroy import destroy
 from .exceptions import ExitHandlerException
-from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
+from .parser import add_basic_args, add_general_args, add_env_args, add_action_args, add_job_args
 from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
 
 logger = logging.getLogger(__name__)
@@ -25,13 +30,13 @@ def cli_rsync(subparsers):
     add_basic_args(parser)
 
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
     add_action_args(parser)
     add_env_args(parser)
 
     REQUIRED_ARGS['rsync'] = ['name',
                               'service',
-                              'forge_env',
-                              'rsync_path']
+                              'forge_env',]
 
 
 def rsync(config):
@@ -89,7 +94,53 @@ def rsync(config):
                 logger.error('Rsync failed:\n%s', exc.output)
                 return exc.returncode
 
+    def _s3_rsync(config, ip):
+        """downloads a file from S3 and performs a rsync to a given ip
+
+        Parameters
+        ----------
+        config : dict
+            Forge configuration data
+        ip : str
+            IP of the instance to rsync to
+        """
+
+        rval = 0
+
+        s3_loc = config.get('s3_path')
+
+        logger.debug('S3 path: %s', s3_loc)
+
+        s3_uri_pattern = r'(?:s3\:/)?/?(?P<bucket>\S+?)/(?P<key>\S+)'
+
+        match = re.match(s3_uri_pattern, s3_loc)
+        if match:
+            bucket = match.group('bucket')
+            key = match.group('key')
+            name = key.split('/')[-1]
+
+            local_path = f'/tmp/{name}'
+
+            logger.debug('Downloading file from S3 to %s', local_path)
+
+            s3 = boto3.resource('s3')
+            s3.Object(bucket, key).download_file(local_path)
+
+            logger.debug('Successfully downloaded file %s', local_path)
+
+            rval += _rsync({**config, 'rsync_path': local_path}, ip)
+
+            os.remove(local_path)
+        else:
+            rval += 1
+
+        return rval
+
     n_list = get_nlist(config)
+
+    if not config.get('rsync_path') and not config.get('s3_path'):
+        logger.error('No rsync_path or s3_path specified, exiting')
+        sys.exit(1)
 
     for n in n_list:
         try:
@@ -102,8 +153,14 @@ def rsync(config):
                 continue
 
             for ip, _ in targets:
-                logger.info('Rsync destination is %s', ip)
-                rval = _rsync(config, ip)
+                if config.get('rsync_path'):
+                    logger.info('Rsync destination is %s', ip)
+                    rval += _rsync(config, ip)
+
+                if config.get('s3_path'):
+                    logger.info('S3 rsync destination is %s', ip)
+                    rval += _s3_rsync(config, ip)
+
                 if rval:
                     raise ValueError('Rsync command unsuccessful, ending attempts.')
         except ValueError as e:
