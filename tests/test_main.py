@@ -127,6 +127,7 @@ def test_forge_main(mock_pass, mock_execute, mock_validation, cli_call, exp_conf
                 exp_config[i['name']] = i['default']
 
     mock_pass.getuser.return_value = 'test_user'
+    mock_validation.return_value = True
 
     with mock.patch('sys.argv', cli_call):
         main.main()
