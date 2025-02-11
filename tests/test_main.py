@@ -29,7 +29,7 @@ def load_admin_cfg():
         return cfg
     return _load_admin_cfg
 
-
+@mock.patch('forge.configuration.Configuration.validate_aws_permissions')
 @mock.patch('forge.configuration.Configuration.validate')
 @mock.patch('forge.main.execute')
 @mock.patch('forge.configuration.getpass', autospec=True)
@@ -107,7 +107,7 @@ def load_admin_cfg():
       'region': 'us-east-1', 'destroy_after_success': True, 'destroy_after_failure': True,
       'valid_time': 8, 'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
 ])
-def test_forge_main(mock_pass, mock_execute, mock_validation, cli_call, exp_config, load_admin_cfg):
+def test_forge_main(mock_pass, mock_execute, mock_validation, mock_aws_validate, cli_call, exp_config, load_admin_cfg):
     """Test the config after calling forge via the command line."""
     # Loading dev admin configs except for configure job which does not need it
     if cli_call[1] not in {'configure',}:
@@ -127,7 +127,7 @@ def test_forge_main(mock_pass, mock_execute, mock_validation, cli_call, exp_conf
                 exp_config[i['name']] = i['default']
 
     mock_pass.getuser.return_value = 'test_user'
-    mock_validation.return_value = True
+    mock_aws_validate.return_value = True
 
     with mock.patch('sys.argv', cli_call):
         main.main()
