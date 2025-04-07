@@ -81,8 +81,7 @@ def start(config: Configuration):
         logger.error('Master or worker is a spot instance; you cannot start a spot instance')
         # sys.exit(1)  # ToDo: Should we change the tests to reflect an exit or allow it to continue?
 
-    start_config = config.clone()
-    start_config.rr_all = True
+    config.rr_all = True
 
-    n_list = get_nlist(start_config)
+    n_list = get_nlist(config)
     start_fleet(n_list, config)

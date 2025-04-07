@@ -25,7 +25,7 @@ class Configuration:
     ec2_key: str
     forge_env: str
     forge_pem_secret: str
-    job: Literal['configure', 'create', 'destroy', 'engine', 'rsync', 'run', 'ssh', 'start', 'stop']
+    job: JobUnion
 
     additional_config: Optional[list[dict]] = None
     ami: Optional[str] = None

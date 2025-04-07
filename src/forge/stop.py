@@ -42,8 +42,6 @@ def stop_fleet(n_list, config: Configuration):
     config : Configuration
         Forge configuration data
     """
-    profile = config.aws_profile
-    region = config.region
     client = boto3.client('ec2')
 
     details = {n: ec2_ip(n, config) for n in n_list}
@@ -78,8 +76,7 @@ def stop(config: Configuration):
         logger.error('Master or worker is a spot instance; you cannot stop a spot instance')
         # sys.exit(1)  # ToDo: Should we change the tests to reflect an exit or allow it to continue?
 
-    stop_config = config.clone()
-    stop_config.rr_all = True
+    config.rr_all = True
 
-    n_list = get_nlist(stop_config)
+    n_list = get_nlist(config)
     stop_fleet(n_list, config)
