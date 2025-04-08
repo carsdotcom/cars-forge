@@ -29,6 +29,7 @@ def load_admin_cfg():
         return cfg
     return _load_admin_cfg
 
+@mock.patch('boto3.setup_default_session')
 @mock.patch('forge.configuration.Configuration.validate_aws_permissions')
 @mock.patch('forge.configuration.Configuration.validate')
 @mock.patch('forge.main.execute')
@@ -107,7 +108,7 @@ def load_admin_cfg():
       'region': 'us-east-1', 'destroy_after_success': True, 'destroy_after_failure': True,
       'valid_time': 8, 'ec2_max': 768, 'spot_strategy': 'price-capacity-optimized'}),
 ])
-def test_forge_main(mock_pass, mock_execute, mock_validation, mock_aws_validate, cli_call, exp_config, load_admin_cfg):
+def test_forge_main(mock_pass, mock_execute, mock_validation, mock_aws_validate, mock_boto3, cli_call, exp_config, load_admin_cfg):
     """Test the config after calling forge via the command line."""
     # Loading dev admin configs except for configure job which does not need it
     if cli_call[1] not in {'configure',}:
@@ -134,8 +135,11 @@ def test_forge_main(mock_pass, mock_execute, mock_validation, mock_aws_validate,
 
     mock_execute.assert_called_once_with(exp_config)
     if cli_call[1] not in {'configure',}:
+        mock_boto3.assert_called_once()
         mock_validation.assert_called_once()
 
+@mock.patch('boto3.setup_default_session')
+@mock.patch('forge.configuration.Configuration.validate_aws_permissions')
 @pytest.mark.parametrize('cli_call,exp_error', [
     (['forge', 'run'],
      [
@@ -194,8 +198,11 @@ def test_forge_main(mock_pass, mock_execute, mock_validation, mock_aws_validate,
          ('forge.configuration', 40, 'ram must have 2 values for service cluster')
      ]),
 ])
-def test_forge_main_errors(cli_call, exp_error, caplog):
+def test_forge_main_errors(mock_aws_validate, mock_boto3, cli_call, exp_error, caplog):
     """Test calling forge via the command line with bad arguments."""
+
+    mock_aws_validate.return_value = True
+
     with pytest.raises(SystemExit):
         with mock.patch('sys.argv', cli_call):
             main.main()
