@@ -6,6 +6,17 @@ from unittest import mock
 import pytest
 
 from forge import run
+from forge.configuration import Configuration
+
+
+BASE_CONFIG = {
+    'region': 'us-east-1',
+    'ec2_amis': {},
+    'ec2_key': '',
+    'forge_env': 'dev',
+    'forge_pem_secret': '',
+    'job': 'run'
+}
 
 
 @mock.patch('forge.run.subprocess.run')
@@ -21,7 +32,9 @@ def test_run_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, serv
     mock_get_ip.return_value = [(ip, None)]
     key_path = '/dummy/key/path'
     mock_key_file.return_value.__enter__.return_value = key_path
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-run',
         'date': '2021-02-01',
         'service': service,
@@ -30,7 +43,8 @@ def test_run_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, serv
         'aws_profile': 'dev',
         'forge_env': 'test',
         'run_cmd': 'dummy.sh dev test',
-    }
+    })
+
     expected_cmd = [
         'ssh', '-t', '-o', 'UserKnownHostsFile=/dev/null',  '-o',
         'StrictHostKeyChecking=no', '-i', key_path, f'root@{ip}',
@@ -63,7 +77,9 @@ def test_run_error(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, caplog
     mock_get_ip.return_value = [(ip, None)]
     key_path = '/dummy/key/path'
     mock_key_file.return_value.__enter__.return_value = key_path
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-run',
         'date': '2021-02-01',
         'service': 'single',
@@ -73,7 +89,9 @@ def test_run_error(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, caplog
         'forge_env': 'test',
         'run_cmd': 'dummy.sh dev test',
         'job': 'run',
-    }
+        'destroy_after_failure': False
+    })
+
     expected_cmd = [
         'ssh', '-t', '-o', 'UserKnownHostsFile=/dev/null',  '-o',
         'StrictHostKeyChecking=no', '-i', key_path, f'root@{ip}',

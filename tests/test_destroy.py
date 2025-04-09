@@ -1,19 +1,31 @@
 from unittest import mock
 
-from forge import destroy
-
 import pytest
+
+from forge import destroy
+from forge.configuration import Configuration
+
+
+BASE_CONFIG = {
+    'region': 'us-east-1',
+    'ec2_amis': {},
+    'ec2_key': '',
+    'forge_env': 'dev',
+    'forge_pem_secret': '',
+    'job': 'destroy'
+}
 
 
 @mock.patch("forge.destroy.find_and_destroy")
 @pytest.mark.parametrize("service, market", [("single", ["spot"]), ("cluster", ["spot", "spot"])])
 def test_destroy(mock_find_and_destroy, service, market):
-    config = {
+    config = Configuration(**{
+        **BASE_CONFIG,
         "name": "test-run",
         "date": "2021-02-01",
         "service": service,
         "market": market
-    }
+    })
 
     destroy.destroy(config)
     
@@ -37,12 +49,13 @@ def test_find_and_destroy(mock_fleet_destroy, mock_pricing, mock_ec2_ip, service
     ec2_details = [{"ip": ip, "spot_id": ["abc"], "state": None, "fleet_id": fleet_id}]
     mock_ec2_ip.return_value = ec2_details
 
-    config = {
+    config = Configuration(**{
+        **BASE_CONFIG,
         "name": "test-run",
         "date": "2021-02-01",
         "service": service,
         "market": market
-    }
+    })
 
     destroy.destroy(config)
 

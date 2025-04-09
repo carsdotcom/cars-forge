@@ -8,6 +8,7 @@ from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .exceptions import ExitHandlerException
 from .parser import add_basic_args, add_general_args, add_env_args, add_action_args, add_job_args
 from .common import ec2_ip, key_file, get_ip, destroy_hook, user_accessible_vars, FormatEmpty, exit_callback, get_nlist
+from .configuration import Configuration
 from .destroy import destroy
 
 logger = logging.getLogger(__name__)
@@ -34,12 +35,12 @@ def cli_run(subparsers):
                             'run_cmd']
 
 
-def run(config):
+def run(config: Configuration):
     """runs the file specified by run_cmd on the instance
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
 
     Returns
@@ -50,21 +51,18 @@ def run(config):
     sys.excepthook = destroy_hook
 
     # run the run script on the single or master
-    name = config['name']
-    date = config.get('date', '')
-    service = config['service']
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
-    rr_all = config.get('rr_all')
-    destroy_flag = config.get('destroy_after_failure')
+    service = config.service
+    market = config.market or DEFAULT_ARG_VALS['market']
+    destroy_flag = config.destroy_after_failure
     rval = 0
     task = service
 
-    def _run(config, ip):
+    def _run(config: Configuration, ip):
         """performs the run operation on a given ip
 
         Parameters
         ----------
-        config : dict
+        config : Configuration
             Forge configuration data
         ip : str
             IP of the instance to run the command on
@@ -74,10 +72,10 @@ def run(config):
         int
             The status of the program
         """
-        run_cmd = config['run_cmd']
-        pem_secret = config['forge_pem_secret']
-        region = config['region']
-        profile = config.get('aws_profile')
+        run_cmd = config.run_cmd
+        pem_secret = config.forge_pem_secret
+        region = config.region
+        profile = config.aws_profile
 
         with key_file(pem_secret, region, profile) as pem_path:
             fmt = FormatEmpty()

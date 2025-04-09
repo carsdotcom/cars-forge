@@ -8,7 +8,8 @@ import boto3
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_general_args, add_env_args, add_job_args, add_action_args
-from .common import ec2_ip, set_boto_session, get_ec2_pricing
+from .common import ec2_ip, get_ec2_pricing
+from .configuration import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -33,27 +34,22 @@ def cli_destroy(subparsers):
                                 'forge_env']
 
 
-def pricing(detail, config, market):
+def pricing(detail, config: Configuration, market):
     """get pricing info for fleet from AWS
 
     Parameters
     ----------
     detail : list
         A list of AWS EC2 instance details
-    config : dict
+    config : Configuration
         Forge configuration data
     market : {'spot', 'on-demand'}
         The market the instance was created in
     """
     logger.debug('config is %s', config)
-    profile = config.get('aws_profile')
-    region = config.get('region')
-
-    set_boto_session(region, profile)
 
     total_cost = 0
     now = datetime.now(timezone.utc)
-    dif = timedelta()
     max_dif = timedelta()
     for e in detail:
         if e['state'] == 'running':
@@ -62,7 +58,7 @@ def pricing(detail, config, market):
             if dif > max_dif:
                 max_dif = dif
             ec2_type = e['instance_type']
-            config['aws_az'] = e['az']
+            config.aws_az = e['az']
             total_cost = get_ec2_pricing(ec2_type, market, config)
 
     if total_cost > 0:
@@ -74,7 +70,7 @@ def pricing(detail, config, market):
         logger.info('Total run time was %s. Total cost was $%s', time_diff, cost)
 
 
-def fleet_destroy(n, fleet_id, config):
+def fleet_destroy(n, fleet_id, config: Configuration):
     """sends the cancel fleet request or terminate instance to AWS
 
     Parameters
@@ -83,14 +79,9 @@ def fleet_destroy(n, fleet_id, config):
         Fleet name
     fleet_id : str
         Fleet ID
-    config : dict
+    config : Configuration
         Forge configuration data
     """
-    profile = config.get('aws_profile')
-    region = config.get('region')
-
-    set_boto_session(region, profile)
-
     client = boto3.client('ec2')
 
     try:
@@ -107,20 +98,20 @@ def fleet_destroy(n, fleet_id, config):
                  len(list(response["SuccessfulFleetDeletions"])), len(list(response["UnsuccessfulFleetDeletions"])))
 
 
-def find_and_destroy(n, config):
+def find_and_destroy(n, config: Configuration):
     """searches for fleets matching n and destroys them
 
     Parameters
     ----------
     n : str
         Fleet name
-    config : dict
+    config : Configuration
         Forge configuration data
     """
     logger.info('Finding %s instances', n)
     detail = ec2_ip(n, config)
     logger.debug(detail)
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
+    market = config.market_failover or DEFAULT_ARG_VALS['market']
     market = market[-1] if 'cluster-worker' in n else market[0]
     pricing(detail, config, market)
     for i in detail:
@@ -129,18 +120,18 @@ def find_and_destroy(n, config):
     logger.info('Fleet %s destroyed', n)
 
 
-def destroy(config):
+def destroy(config: Configuration):
     """finds and destroys forge instances based on market name and service
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
     """
-    name = config.get('name')
-    date = config.get('date', '')
-    service = config.get('service')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
+    name = config.name
+    date = config.date or ''
+    service = config.service
+    market = config.market or DEFAULT_ARG_VALS['market']
 
     if service == 'single':
         n = f'{name}-{market[0]}-{service}-{date}'

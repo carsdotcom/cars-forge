@@ -156,7 +156,7 @@ def add_action_args(parser, *, suppress: bool = False):
     action_grp.add_argument('--rsync_path', '--rsync-path', help=help_message)
     action_grp.add_argument('--s3_path', '--s3-path', help=help_message)
     action_grp.add_argument('--run_cmd', '--run-cmd', help=help_message)
-    action_grp.add_argument('--all', action='store_true', dest='rr_all', help=help_message)
+    action_grp.add_argument('--all', action='store_true', dest='rr_all', help=help_message, default=None)
 
 
 def add_env_args(parser):
@@ -174,7 +174,7 @@ def add_env_args(parser):
     env_cfg_grp.add_argument('--aws_subnet', '--aws-subnet')
     env_cfg_grp.add_argument('--ec2_key', '--ec2-key')
     env_cfg_grp.add_argument('--aws_security_group', '--aws_security-group')
-    env_cfg_grp.add_argument('--excluded_ec2s', '--excluded-ec2s', nargs='+', metavar='EC2_TYPE', default=list())
+    env_cfg_grp.add_argument('--excluded_ec2s', '--excluded-ec2s', nargs='+', metavar='EC2_TYPE', default=None)
     env_cfg_grp.add_argument('--destroy_after_success', '--destroy-after-success', action='store_true', default=None)
     env_cfg_grp.add_argument('--destroy_after_failure', '--destroy-after-failure', action='store_true', default=None)
     env_cfg_grp.add_argument('--no_destroy_after_success', '--no-destroy-after-success', action='store_false',

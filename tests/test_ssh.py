@@ -6,6 +6,17 @@ from unittest import mock
 import pytest
 
 from forge import ssh
+from forge.configuration import Configuration
+
+
+BASE_CONFIG = {
+    'region': 'us-east-1',
+    'ec2_amis': {},
+    'ec2_key': '',
+    'forge_env': 'dev',
+    'forge_pem_secret': '',
+    'job': 'ssh'
+}
 
 
 @mock.patch('forge.ssh.subprocess.run')
@@ -21,7 +32,9 @@ def test_ssh_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, serv
     mock_get_ip.return_value = [(ip, 'i-abc')]
     key_path = '/dummy/key/path'
     mock_key_file.return_value.__enter__.return_value = key_path
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-run',
         'date': '2021-02-01',
         'service': service,
@@ -29,7 +42,8 @@ def test_ssh_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_run, serv
         'region': 'us-east-1',
         'aws_profile': 'dev',
         'market': ['spot', 'spot'],
-    }
+    })
+
     expected_cmd = [
         'ssh', '-t', '-o', 'UserKnownHostsFile=/dev/null',  '-o',
         'StrictHostKeyChecking=no', '-i', key_path, f'root@{ip}',
@@ -55,7 +69,9 @@ def test_ssh_no_instances(mock_ec2_ip, mock_get_ip, caplog):
     ec2_details = [{'ip': None, 'id': None, 'fleet_id': [], 'state': None}]
     mock_ec2_ip.return_value = ec2_details
     mock_get_ip.return_value = []
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-run',
         'date': '2021-02-01',
         'service': 'single',
@@ -64,7 +80,7 @@ def test_ssh_no_instances(mock_ec2_ip, mock_get_ip, caplog):
         'aws_profile': 'dev',
         'forge_env': 'test',
         'market': ['spot', 'spot'],
-    }
+    })
 
     with pytest.raises(SystemExit):
         ssh.ssh(config)
@@ -95,7 +111,9 @@ def test_ssh_connection_error(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_
     mock_get_ip.return_value = [(ip, 'i-abc')]
     key_path = '/dummy/key/path'
     mock_key_file.return_value.__enter__.return_value = key_path
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-run',
         'date': '2021-02-01',
         'service': 'single',
@@ -104,7 +122,8 @@ def test_ssh_connection_error(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_
         'aws_profile': 'dev',
         'forge_env': 'test',
         'market': ['spot', 'spot'],
-    }
+    })
+
     expected_cmd = [
         'ssh', '-t', '-o', 'UserKnownHostsFile=/dev/null',  '-o',
         'StrictHostKeyChecking=no', '-i', key_path, f'root@{ip}',

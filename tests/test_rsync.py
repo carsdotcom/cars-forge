@@ -5,6 +5,17 @@ from unittest import mock
 import pytest
 
 from forge import rsync
+from forge.configuration import Configuration
+
+
+BASE_CONFIG = {
+    'region': 'us-east-1',
+    'ec2_amis': {},
+    'ec2_key': '',
+    'forge_env': 'dev',
+    'forge_pem_secret': '',
+    'job': 'rsync'
+}
 
 
 @mock.patch('forge.rsync.os.path')
@@ -25,7 +36,9 @@ def test_rsync_file_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_ch
     mock_key_file.return_value.__enter__.return_value = key_path
     mock_os_path.isdir.return_value = False
     mock_os_path.isfile.return_value = True
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-rsync',
         'date': '2021-02-01',
         'market': ['spot', 'spot'],
@@ -34,7 +47,8 @@ def test_rsync_file_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_ch
         'region': 'us-east-1',
         'aws_profile': 'dev',
         'rsync_path': rsync_path,
-    }
+    })
+
     expected_cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o'
     expected_cmd += f' StrictHostKeyChecking=no -i {key_path}" {rsync_path} root@{ip}:/root/'
 
@@ -52,6 +66,7 @@ def test_rsync_file_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_ch
     mock_sub_chk.assert_called_once_with(
         expected_cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True
     )
+
     assert f'Copying file {rsync_path} to EC2.' in caplog.text
 
 
@@ -71,7 +86,9 @@ def test_rsync_dir_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk
     rsync_path = 'path/to/rsync/dir'
     mock_key_file.return_value.__enter__.return_value = key_path
     mock_os_path.isdir.return_value = True
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-rsync',
         'date': '2021-02-01',
         'market': ['spot', 'spot'],
@@ -80,7 +97,8 @@ def test_rsync_dir_success(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk
         'region': 'us-east-1',
         'aws_profile': 'dev',
         'rsync_path': rsync_path,
-    }
+    })
+
     expected_cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o'
     expected_cmd += f' StrictHostKeyChecking=no -i {key_path}" {rsync_path}/* root@{ip}:/root/'
 
@@ -116,7 +134,9 @@ def test_rsync_no_paths(mock_ec2_ip, mock_get_ip, mock_key_file, mock_os_path, c
     mock_key_file.return_value.__enter__.return_value = key_path
     mock_os_path.isdir.return_value = False
     mock_os_path.isfile.return_value = False
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-rsync',
         'date': '2021-02-01',
         'market': ['spot', 'spot'],
@@ -125,7 +145,7 @@ def test_rsync_no_paths(mock_ec2_ip, mock_get_ip, mock_key_file, mock_os_path, c
         'region': 'us-east-1',
         'aws_profile': 'dev',
         'rsync_path': rsync_path,
-    }
+    })
 
     with pytest.raises(SystemExit, match='1'):
         rsync.rsync(config)
@@ -158,7 +178,9 @@ def test_rsync_fail(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk,
     rsync_path = 'path/to/rsync/dir'
     mock_key_file.return_value.__enter__.return_value = key_path
     mock_os_path.isdir.return_value = True
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-rsync',
         'date': '2021-02-01',
         'market': ['spot', 'spot'],
@@ -168,7 +190,8 @@ def test_rsync_fail(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk,
         'aws_profile': 'dev',
         'rsync_path': rsync_path,
         'job': 'rsync',
-    }
+    })
+
     expected_cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o'
     expected_cmd += f' StrictHostKeyChecking=no -i {key_path}" {rsync_path}/* root@{ip}:/root/'
 
@@ -208,7 +231,9 @@ def test_rsync_multi(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk,
     rsync_path = 'path/to/rsync/dir'
     mock_key_file.return_value.__enter__.return_value = key_path
     mock_os_path.isdir.return_value = True
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-rsync',
         'date': '2021-02-01',
         'market': ['spot', 'spot'],
@@ -218,7 +243,8 @@ def test_rsync_multi(mock_ec2_ip, mock_get_ip, mock_key_file, mock_sub_chk,
         'aws_profile': 'dev',
         'rsync_path': rsync_path,
         'rr_all': True,
-    }
+    })
+
     e_cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o'
     e_cmd += f' StrictHostKeyChecking=no -i {key_path}" {rsync_path}/* root@{{0}}:/root/'
     expected_cmds = [e_cmd.format(ip) for ip in ips]
@@ -254,7 +280,9 @@ def test_rsync_no_instances(mock_ec2_ip, mock_get_ip, targets, caplog):
     mock_ec2_ip.return_value = ec2_details
     mock_get_ip.return_value = targets
     rsync_path = 'path/to/rsync/dir'
-    config = {
+
+    config = Configuration(**{
+        **BASE_CONFIG,
         'name': 'test-rsync',
         'date': '2021-02-01',
         'market': ['spot', 'spot'],
@@ -263,7 +291,7 @@ def test_rsync_no_instances(mock_ec2_ip, mock_get_ip, targets, caplog):
         'region': 'us-east-1',
         'aws_profile': 'dev',
         'rsync_path': rsync_path,
-    }
+    })
 
     rsync.rsync(config)
 
