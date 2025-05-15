@@ -171,6 +171,7 @@ def add_env_args(parser):
     env_cfg_grp.add_argument('--aws_profile', '--aws-profile')
     env_cfg_grp.add_argument('--aws_az', '--aws-az')
     env_cfg_grp.add_argument('--aws_act_num', '--aws-account-num')
+    env_cfg_grp.add_argument('--aws_imds_v2', '--aws-imds-v2', action='store_true', default=None)
     env_cfg_grp.add_argument('--aws_subnet', '--aws-subnet')
     env_cfg_grp.add_argument('--ec2_key', '--ec2-key')
     env_cfg_grp.add_argument('--aws_security_group', '--aws_security-group')

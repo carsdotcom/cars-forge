@@ -369,6 +369,8 @@ def create_template(n, config: Configuration, task):
 
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
 
+    imds_v2 = 'required' if config.aws_imds_v2 else 'optional'
+
     response = client.create_launch_template(
         LaunchTemplateName=n,
         LaunchTemplateData={
@@ -383,6 +385,7 @@ def create_template(n, config: Configuration, task):
             'InstanceInitiatedShutdownBehavior': 'terminate',
             'UserData': u,
             'SecurityGroupIds': [sg],
+            'MetadataOptions': {'HttpTokens': imds_v2},
             **specs
         },
         TagSpecifications=[{

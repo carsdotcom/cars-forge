@@ -31,6 +31,7 @@ class Configuration:
     ami: Optional[str] = None
     app_dir: Optional[str] = None
     aws_az: Optional[str] = None
+    aws_imds_v2: Optional[bool] = None
     aws_multi_az: Optional[dict] = None
     aws_profile: Optional[str] = None
     aws_region: Optional[str] = None
@@ -55,7 +56,7 @@ class Configuration:
     market_failover: Optional[bool] = None  # ToDo: Remove
     name: Optional[str] = None
     on_demand_failover: Optional[bool] = None
-    ratio: Optional[MachineSpec] = field(default_factory=lambda: DEFAULT_ARG_VALS['default_ratio'])
+    ratio: Optional[MachineSpec] = None #field(default_factory=lambda: DEFAULT_ARG_VALS['default_ratio'])
     ram: Optional[MachineSpec] = None
     rr_all: Optional[bool] = None
     rsync_path: Optional[str] = None
