@@ -308,6 +308,7 @@ def create_template(n, config: Configuration, task):
     user_disk_device_name = config.disk_device_name
     valid = config.valid_time or DEFAULT_ARG_VALS['valid_time']
     config_dir = config.config_dir
+    imds_max_hops = config.aws_imds_max_hops
 
     market = market[-1] if task == 'cluster-worker' else market[0]
     if service:
@@ -318,6 +319,9 @@ def create_template(n, config: Configuration, task):
                 user_ami += '_gpu'
             ami_info = env_ami.get(user_ami)
             ami, disk, disk_device_name = (ami_info['ami'], ami_info['disk'], ami_info['disk_device_name'])
+
+            if not imds_max_hops and ami_info.get('aws_imds_max_hops'):
+                imds_max_hops = ami_info['aws_imds_max_hops']
 
         disk = user_disk if user_disk > disk else disk
         disk_device_name = user_disk_device_name if user_disk_device_name else disk_device_name
@@ -370,6 +374,10 @@ def create_template(n, config: Configuration, task):
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
 
     imds_v2 = 'required' if config.aws_imds_v2 else 'optional'
+    metadata_options = {'HttpTokens': imds_v2}
+
+    if imds_max_hops:
+        metadata_options['HttpPutResponseHopLimit'] = imds_max_hops
 
     response = client.create_launch_template(
         LaunchTemplateName=n,
@@ -385,7 +393,7 @@ def create_template(n, config: Configuration, task):
             'InstanceInitiatedShutdownBehavior': 'terminate',
             'UserData': u,
             'SecurityGroupIds': [sg],
-            'MetadataOptions': {'HttpTokens': imds_v2},
+            'MetadataOptions': metadata_options,
             **specs
         },
         TagSpecifications=[{
