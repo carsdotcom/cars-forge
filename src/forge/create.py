@@ -312,7 +312,7 @@ def create_template(n, config: Configuration, task):
 
     market = market[-1] if task == 'cluster-worker' else market[0]
     if service:
-        if len(user_ami) == 21 and user_ami[:4] == "ami-":
+        if user_ami[:4] == "ami-":
             ami, disk, disk_device_name = (user_ami, user_disk, user_disk_device_name)
         else:
             if gpu:
