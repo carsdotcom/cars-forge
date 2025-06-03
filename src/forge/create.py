@@ -334,7 +334,7 @@ def create_template(n, config: Configuration, task):
 
         if ami_or_service:
             if isinstance(ud[ami_or_service], str):
-                with open(os.path.join(config_dir, ud[user_ami]), 'r') as f:
+                with open(os.path.join(config_dir, ud[ami_or_service]), 'r') as f:
                     ud = fmt.format(f.read(), **user_accessible_vars(config, market=market, task=task))
             else:
                 for k, v in ud[ami_or_service].items():
