@@ -5,8 +5,9 @@ import subprocess
 import sys
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
-from .parser import add_basic_args, add_general_args, add_env_args
+from .parser import add_basic_args, add_general_args, add_env_args, add_job_args, add_action_args
 from .common import ec2_ip, key_file, get_ip
+from .configuration import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,8 @@ def cli_ssh(subparsers):
     parser = subparsers.add_parser('ssh', description='SSH to EC2 instance')
     add_basic_args(parser)
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
+    add_action_args(parser, suppress=True)
     add_env_args(parser)
 
     REQUIRED_ARGS['ssh'] = ['name',
@@ -29,21 +32,21 @@ def cli_ssh(subparsers):
                             'forge_env']
 
 
-def ssh(config):
+def ssh(config: Configuration):
     """ssh into a running EC2 instance
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
     """
-    name = config['name']
-    date = config.get('date', '')
-    service = config['service']
-    pem_secret = config['forge_pem_secret']
-    region = config['region']
-    profile = config.get('aws_profile')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
+    name = config.name
+    date = config.date or ''
+    service = config.service
+    pem_secret = config.forge_pem_secret
+    region = config.region
+    profile = config.aws_profile
+    market = config.market or DEFAULT_ARG_VALS['market']
 
     if service == "cluster":
         n = f'{name}-{market[0]}-{service}-master-{date}'

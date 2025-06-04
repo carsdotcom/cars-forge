@@ -1,14 +1,17 @@
 """Rsync user content to EC2 instance."""
 import logging
 import os
+import re
 import subprocess
 import sys
 
-from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
-from .destroy import destroy
+import boto3
+
+from . import REQUIRED_ARGS
 from .exceptions import ExitHandlerException
-from .parser import add_basic_args, add_general_args, add_env_args, add_action_args
+from .parser import add_basic_args, add_general_args, add_env_args, add_action_args, add_job_args
 from .common import ec2_ip, key_file, get_ip, get_nlist, exit_callback
+from .configuration import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +28,21 @@ def cli_rsync(subparsers):
     add_basic_args(parser)
 
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
     add_action_args(parser)
     add_env_args(parser)
 
     REQUIRED_ARGS['rsync'] = ['name',
                               'service',
-                              'forge_env',
-                              'rsync_path']
+                              'forge_env',]
 
 
-def rsync(config):
+def rsync(config: Configuration):
     """rsyncs the file at rsync_path to the instance
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
 
     Returns
@@ -48,23 +51,22 @@ def rsync(config):
         The status of the rsync commands
     """
 
-    destroy_flag = config.get('destroy_after_failure')
     rval = 0
 
-    def _rsync(config, ip):
+    def _rsync(config: Configuration, ip):
         """performs the rsync to a given ip
 
         Parameters
         ----------
-        config : dict
+        config : Configuration
             Forge configuration data
         ip : str
             IP of the instance to rsync to
         """
-        pem_secret = config['forge_pem_secret']
-        region = config['region']
-        profile = config.get('aws_profile')
-        rsync_loc = config.get('rsync_path', config.get('app_dir'))
+        pem_secret = config.forge_pem_secret
+        region = config.region
+        profile = config.aws_profile
+        rsync_loc = config.rsync_path or config.app_dir
 
         with key_file(pem_secret, region, profile) as pem_path:
             if os.path.isdir(rsync_loc):
@@ -89,7 +91,56 @@ def rsync(config):
                 logger.error('Rsync failed:\n%s', exc.output)
                 return exc.returncode
 
+    def _s3_rsync(config: Configuration, ip):
+        """downloads a file from S3 and performs a rsync to a given ip
+
+        Parameters
+        ----------
+        config : Configuration
+            Forge configuration data
+        ip : str
+            IP of the instance to rsync to
+        """
+
+        rval = 0
+
+        s3_loc = config.s3_path
+
+        logger.debug('S3 path: %s', s3_loc)
+
+        s3_uri_pattern = r'(?:s3\:/)?/?(?P<bucket>\S+?)/(?P<key>\S+)'
+
+        match = re.match(s3_uri_pattern, s3_loc)
+        if match:
+            bucket = match.group('bucket')
+            key = match.group('key')
+            name = key.split('/')[-1]
+
+            local_path = f'/tmp/{name}'
+
+            logger.debug('Downloading file from S3 to %s', local_path)
+
+            s3 = boto3.resource('s3')
+            s3.Object(bucket, key).download_file(local_path)
+
+            logger.debug('Successfully downloaded file %s', local_path)
+
+            s3_config = config.clone()
+            s3_config.rsync_path = local_path
+
+            rval += _rsync(s3_config, ip)
+
+            os.remove(local_path)
+        else:
+            rval += 1
+
+        return rval
+
     n_list = get_nlist(config)
+
+    if not config.rsync_path and not config.s3_path:
+        logger.error('No rsync_path or s3_path specified, exiting')
+        sys.exit(1)
 
     for n in n_list:
         try:
@@ -102,8 +153,14 @@ def rsync(config):
                 continue
 
             for ip, _ in targets:
-                logger.info('Rsync destination is %s', ip)
-                rval = _rsync(config, ip)
+                if config.rsync_path:
+                    logger.info('Rsync destination is %s', ip)
+                    rval += _rsync(config, ip)
+
+                if config.s3_path:
+                    logger.info('S3 rsync destination is %s', ip)
+                    rval += _s3_rsync(config, ip)
+
                 if rval:
                     raise ValueError('Rsync command unsuccessful, ending attempts.')
         except ValueError as e:

@@ -12,9 +12,9 @@ import botocore.exceptions
 from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
-from .parser import add_basic_args, add_job_args, add_env_args, add_general_args
-from .common import (ec2_ip, destroy_hook, set_boto_session, exit_callback,
-                     user_accessible_vars, FormatEmpty, get_ec2_pricing)
+from .parser import add_basic_args, add_job_args, add_env_args, add_general_args, add_action_args
+from .common import ec2_ip, destroy_hook, exit_callback, user_accessible_vars, FormatEmpty, get_ec2_pricing
+from .configuration import Configuration
 from .destroy import destroy
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ def cli_create(subparsers):
     parser = subparsers.add_parser('create', description='Create EC2')
     add_basic_args(parser)
     add_job_args(parser)
+    add_action_args(parser, suppress=True)
     add_env_args(parser)
     add_general_args(parser)
 
@@ -136,7 +137,7 @@ def get_status(client, ec2_id):
     return status
 
 
-def create_status(n, request, config):
+def create_status(n, request, config: Configuration):
     """create the console status messages for Forge
 
     Parameters
@@ -145,14 +146,10 @@ def create_status(n, request, config):
         Fleet name
     request : dict
         Response data from Boto3 create_fleet
-    config : dict
+    config : Configuration
         Forge configuration data
     """
-    profile = config.get('aws_profile')
-    region = config.get('region')
-    destroy_flag = config.get('destroy_after_failure')
-
-    set_boto_session(region, profile)
+    destroy_flag = config.destroy_after_failure
 
     client = boto3.client('ec2')
 
@@ -168,8 +165,8 @@ def create_status(n, request, config):
     create_time = fleet_details.get('CreateTime')
     time_without_spot = 0
     while current_status != 'fulfilled':
-        if config.get('create_timeout') and t > config['create_timeout']:
-            logger.error('Timeout of %s seconds hit for instance fulfillment; Aborting.', config['create_timeout'])
+        if config.create_timeout and t > config.create_timeout:
+            logger.error('Timeout of %s seconds hit for instance fulfillment; Aborting.', config.create_timeout)
             if destroy_flag:
                 destroy(config)
             exit_callback(config, exit=True)
@@ -215,7 +212,7 @@ def create_status(n, request, config):
         list_len = len(ec2_id_list)
 
     logger.debug('EC2 list is: %s', ec2_id_list)
-    config['ec2_id_list'] = ec2_id_list
+    config['ec2_id_list'] = ec2_id_list  # ToDo: Investigate what this option is
     time_without_instance = 0
     for s in ec2_id_list:
         status = 'initializing'
@@ -241,26 +238,23 @@ def create_status(n, request, config):
     pricing(n, config, fleet_id)
 
 
-def pricing(n, config, fleet_id):
+def pricing(n, config: Configuration, fleet_id):
     """gets pricing info for fleet from AWS
 
     Parameters
     ----------
     n : str
         Fleet name
-    config : dict
+    config : Configuration
         Forge configuration data
     fleet_id : str
         AWS Fleet ID
     """
-    profile = config.get('aws_profile')
-    region = config.get('region')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
+    profile = config.aws_profile
+    region = config.region
+    market = config.market or DEFAULT_ARG_VALS['market']
     market = market[-1] if 'cluster-worker' in n else market[0]
 
-    set_boto_session(region, profile)
-
-    region = config.get('region')
     ec2_client = boto3.client('ec2')
 
     # Get list of active fleet EC2s
@@ -288,43 +282,37 @@ def pricing(n, config, fleet_id):
         logger.info('Hourly price is $%.2f', total_on_demand_cost)
 
 
-def create_template(n, config, task):
+def create_template(n, config: Configuration, task):
     """creates EC2 Launch Template for n
 
     Parameters
     ----------
     n : str
         Fleet name
-    config : dict
+    config : Configuration
         Forge configuration data
     task : str
         Forge service to run
     """
-    profile = config.get('aws_profile')
-    ud = config.get('user_data', None)
-    now_utc = datetime.utcnow()
-    now_utc = now_utc.replace(microsecond=0)
-    key = config.get('ec2_key')
-    role = config.get('aws_role')
-    name = config.get('name')
-    date = config.get('date')
-    region = config.get('region')
-    sg = config.get('aws_security_group')
-    gpu = config.get('gpu_flag', False)
-    service = config.get('service')
-    user = config.get('user')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
-    tags = config.get('tags')
-    env_ami = config.get('ec2_amis')
-    user_ami = config.get('ami', service)
-    user_disk = config.get('disk', 0)
-    user_disk_device_name = config.get('disk_device_name', None)
-    valid = config.get('valid_time', DEFAULT_ARG_VALS['valid_time'])
-    config_dir = config['config_dir']
+    ud = config.user_data
+    key = config.ec2_key
+    role = config.aws_role
+    sg = config.aws_security_group
+    gpu = config.gpu_flag or False
+    service = config.service
+    market = config.market or DEFAULT_ARG_VALS['market']
+    tags = config.tags
+    env_ami = config.ec2_amis
+    user_ami = config.ami or service
+    user_disk = config.disk or 0
+    user_disk_device_name = config.disk_device_name
+    valid = config.valid_time or DEFAULT_ARG_VALS['valid_time']
+    config_dir = config.config_dir
+    imds_max_hops = config.aws_imds_max_hops
 
     market = market[-1] if task == 'cluster-worker' else market[0]
     if service:
-        if len(user_ami) == 21 and user_ami[:4] == "ami-":
+        if user_ami[:4] == "ami-":
             ami, disk, disk_device_name = (user_ami, user_disk, user_disk_device_name)
         else:
             if gpu:
@@ -332,23 +320,28 @@ def create_template(n, config, task):
             ami_info = env_ami.get(user_ami)
             ami, disk, disk_device_name = (ami_info['ami'], ami_info['disk'], ami_info['disk_device_name'])
 
+            if not imds_max_hops and ami_info.get('aws_imds_max_hops'):
+                imds_max_hops = ami_info['aws_imds_max_hops']
+
         disk = user_disk if user_disk > disk else disk
         disk_device_name = user_disk_device_name if user_disk_device_name else disk_device_name
-
-    set_boto_session(region, profile)
 
     fmt = FormatEmpty()
     client = boto3.client('ec2')
     if isinstance(ud, dict):
-        if service in config['user_data']:
-            if isinstance(ud[service], str):
-                with open(os.path.join(config_dir, ud[service]), 'r') as f:
+        # ToDo: Deprecate service being checked in event of AMI ID
+        ami_or_service = user_ami if user_ami in config.user_data else service
+
+        if ami_or_service:
+            if isinstance(ud[ami_or_service], str):
+                with open(os.path.join(config_dir, ud[ami_or_service]), 'r') as f:
                     ud = fmt.format(f.read(), **user_accessible_vars(config, market=market, task=task))
             else:
-                for k, v in ud[service].items():
+                for k, v in ud[ami_or_service].items():
                     if k in n:
                         with open(os.path.join(config_dir, v), 'r') as f:
                             ud = fmt.format(f.read(), **user_accessible_vars(config, market=market, task=task))
+
         u = base64.b64encode(ud.encode("ascii")).decode("ascii")
     elif isinstance(ud, list):
         with open(os.path.realpath(ud[0 if task != 'cluster-worker' else 1])) as f:
@@ -380,6 +373,12 @@ def create_template(n, config, task):
 
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
 
+    imds_v2 = 'required' if config.aws_imds_v2 else 'optional'
+    metadata_options = {'HttpTokens': imds_v2}
+
+    if imds_max_hops:
+        metadata_options['HttpPutResponseHopLimit'] = imds_max_hops
+
     response = client.create_launch_template(
         LaunchTemplateName=n,
         LaunchTemplateData={
@@ -394,6 +393,7 @@ def create_template(n, config, task):
             'InstanceInitiatedShutdownBehavior': 'terminate',
             'UserData': u,
             'SecurityGroupIds': [sg],
+            'MetadataOptions': metadata_options,
             **specs
         },
         TagSpecifications=[{
@@ -485,12 +485,12 @@ def calc_machine_ranges(*, ram=None, cpu=None, ratio=None, workers=None):
     return job_ram, job_cpu, total_ram, sorted(ram2cpu_ratio)
 
 
-def get_placement_az(config, instance_details, mode=None):
+def get_placement_az(config: Configuration, instance_details, mode=None):
     if not mode:
         mode = 'balanced'
 
-    region = config.get('region')
-    subnet = config['aws_multi_az']
+    region = config.region
+    subnet = config.aws_multi_az
 
     client = boto3.client('ec2')
     az_info = client.describe_availability_zones()
@@ -548,38 +548,36 @@ def get_placement_az(config, instance_details, mode=None):
     return az
 
 
-def create_fleet(n, config, task, instance_details):
+def create_fleet(n, config: Configuration, task, instance_details):
     """creates the AWS EC2 fleet
 
     Parameters
     ----------
     n : str
         Fleet name
-    config : dict
+    config : Configuration
         Forge configuration data
     task : str
         Forge service to run
     instance_details: dict
         EC2 instance details for create_fleet
     """
-    profile = config.get('aws_profile')
-    valid = config.get('valid_time', DEFAULT_ARG_VALS['valid_time'])
-    excluded_ec2s = config.get('excluded_ec2s', None)
-    tags = config.get('tags')
-    region = config.get('region')
+    valid = config.valid_time or DEFAULT_ARG_VALS['valid_time']
+    excluded_ec2s = config.excluded_ec2s
+    tags = config.tags
+    region = config.region
     now_utc = datetime.utcnow()
     now_utc = now_utc.replace(microsecond=0)
     valid_until = now_utc + timedelta(hours=int(valid))
-    subnet = config.get('aws_multi_az')
+    subnet = config.aws_multi_az
 
-    gpu = config.get('gpu_flag', False)
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
-    strategy = config.get('spot_strategy')
+    gpu = config.gpu_flag or False
+    market = config.market or DEFAULT_ARG_VALS['market']
+    strategy = config.spot_strategy
 
     market = market[-1] if 'cluster-worker' in n else market[0]
 
-    set_boto_session(region, profile)
-    az = config['aws_az']
+    az = config.aws_az
 
     fmt = FormatEmpty()
     access_vars = user_accessible_vars(config, market=market, task=task)
@@ -643,25 +641,25 @@ def create_fleet(n, config, task, instance_details):
     create_status(n, request, config)
 
 
-def search_and_create(config, task, instance_details):
+def search_and_create(config: Configuration, task, instance_details):
     """check for running instances and create new ones if necessary
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
     task : str
         Forge service to run
     instance_details: dict
         EC2 instance details for create_fleet
     """
-    if not config.get('ram') and not config.get('cpu'):
+    if not config.ram and not config.cpu:
         logger.error('Please supply either a ram or cpu value to continue.')
         sys.exit(1)
 
-    name = config.get('name')
-    date = config.get('date', '')
-    market = config.get('market', DEFAULT_ARG_VALS['market'])
+    name = config.name
+    date = config.date or ''
+    market = config.market or DEFAULT_ARG_VALS['market']
 
     market = market[-1] if task == 'cluster-worker' else market[0]
 
@@ -674,7 +672,7 @@ def search_and_create(config, task, instance_details):
         if e['state'] in ['running', 'stopped', 'stopping', 'pending']:
             logger.info('%s is %s, the IP is %s', task, e['state'], e['ip'])
 
-            if config.get('destroy_on_create'):
+            if config.destroy_on_create:
                 logger.info('destroy_on_create true, destroying fleet.')
                 destroy(config)
                 create_template(n, config, task)
@@ -696,21 +694,21 @@ def search_and_create(config, task, instance_details):
                 logger.info('%s is running, the IP is %s', task, e['ip'])
 
 
-def get_instance_details(config, task_list):
+def get_instance_details(config: Configuration, task_list):
     """calculate instance details & resources for fleet creation
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
     task_list : list
         Forge services to get details of
     """
-    ram = config.get('ram', None)
-    cpu = config.get('cpu', None)
-    ratio = config.get('ratio', None)
-    service = config.get('service', None)
-    worker_count = config.get('workers', None)
-    destroy_flag = config.get('destroy_after_failure')
+    service = config.service
+    ram = config.ram
+    cpu = config.cpu
+    ratio = config.ratio
+    worker_count = config.workers
+    destroy_flag = config.destroy_after_failure
 
     rc_length = 1 if service == 'single' else 2 if service == 'cluster' else None
 
@@ -760,22 +758,17 @@ def get_instance_details(config, task_list):
     return instance_details
 
 
-def create(config):
+def create(config: Configuration):
     """creates EC2 instances based on config
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
     """
     sys.excepthook = destroy_hook
 
-    profile = config.get('aws_profile')
-    region = config.get('region')
-
-    set_boto_session(region, profile)
-
-    service = config.get('service')
+    service = config.service
     task_list = ['single']
 
     if service == 'cluster':
@@ -783,8 +776,8 @@ def create(config):
 
     instance_details = get_instance_details(config, task_list)
 
-    if not config.get('aws_az'):
-        config['aws_az'] = get_placement_az(config, instance_details[task_list[-1]])
+    if not config.aws_az:
+        config.aws_az = get_placement_az(config, instance_details[task_list[-1]])
 
     for task in task_list:
         search_and_create(config, task, instance_details[task])

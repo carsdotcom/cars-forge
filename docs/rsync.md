@@ -29,3 +29,4 @@ Forge rsync makes it simple for you to copy a folder or file from local to the f
 2. `date`
 3. `all`
 4. `yaml`
+5. `s3_path`

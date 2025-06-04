@@ -2,10 +2,8 @@
 import ast
 import logging
 import os
-import sys
 
 import yaml
-from schema import Schema, And, Optional, Or, SchemaError, Use
 
 from .common import set_config_dir
 
@@ -28,61 +26,6 @@ def cli_configure(subparsers):
         '--log_level', choices={'DEBUG', 'INFO', 'WARNING', 'ERROR'},
         default='INFO', type=str.upper, help='Override logging level.'
     )
-
-
-def check_env_yaml(env_yaml):
-    """validates the environment yaml file
-
-    Parameters
-    ----------
-    env_yaml : dict
-        The environment configuration data
-
-    Returns
-    -------
-    dict
-        The validated environment yaml data
-
-    Raises
-    ------
-    schema.SchemaError
-        If env_yaml does not pass validation
-    """
-    schema = Schema({
-        'forge_env': And(str, len, error='Invalid Environment Name'),
-        Optional('aws_region'): And(str, len, error='Invalid AWS region'),
-        Optional('aws_az'): And(str, len, error='Invalid AWS availability zone'),
-        Optional('aws_subnet'): And(str, len, error='Invalid AWS Subnet'),
-        'ec2_amis': And(dict, len, error='Invalid AMI Dictionary'),
-        Optional('aws_multi_az'): And(dict, len, error='Invalid AWS Subnet'),
-        'ec2_key': And(str, len, error='Invalid AWS key'),
-        Optional('aws_security_group'): And(str, len, error='Invalid AWS Security Group'),
-        'forge_pem_secret': And(str, len, error='Invalid Name of Secret'),
-        Optional('aws_profile'): And(str, len, error='Invalid AWS profile'),
-        Optional('ratio'): And(list, len, error='Invalid default ratio'),
-        Optional('user_data'): And(dict, len, error='Invalid Create Scripts'),
-        Optional('tags'): And(list, len, error="Invalid AWS tags"),
-        Optional('excluded_ec2s'): And(list),
-        Optional('additional_config'): And(list),
-        Optional('ec2_max'): And(int),
-        Optional('spot_strategy'): And(str, len,
-                                       Or(
-                                           'lowest-price',
-                                           'diversified',
-                                           'capacity-optimized',
-                                           'capacity-optimized-prioritized',
-                                           'price-capacity-optimized'),
-                                       error='Invalid spot allocation strategy'),
-        Optional('on_demand_failover'): And(bool),
-        Optional('spot_retries'): And(Use(int), lambda x: x > 0),
-        Optional('create_timeout'): And(Use(int), lambda x: x > 0),
-    })
-    try:
-        validated = schema.validate(env_yaml)
-        return validated
-    except SchemaError as err:
-        logger.error(err)
-        sys.exit(1)
 
 
 def configure():

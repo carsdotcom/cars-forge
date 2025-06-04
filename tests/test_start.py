@@ -1,9 +1,21 @@
 import logging
 from unittest import mock
 
-from forge import start
-
 import pytest
+
+from forge import start
+from forge.configuration import Configuration
+
+
+BASE_CONFIG = {
+    'region': 'us-east-1',
+    'ec2_amis': {},
+    'ec2_key': '',
+    'forge_env': 'dev',
+    'forge_pem_secret': '',
+    'job': 'start'
+}
+
 
 logger = logging.getLogger("start")
 
@@ -17,14 +29,16 @@ logger = logging.getLogger("start")
     ]
 )
 def test_start(mock_start_fleet, service, markets):
-    config = {
+    config = Configuration(**{
+        **BASE_CONFIG,
         "name": "some name",
         "date": "2022-01-01",
         "market": markets,
         "service": service,
         "region": "us-east-1",
         'aws_profile': "dev"
-    }
+    })
+
     start.start(config)
     n_list = []
     if service == "cluster":
@@ -48,12 +62,14 @@ def test_start(mock_start_fleet, service, markets):
     ]
 )
 def test_start_error_in_spot_instance(mock_start_fleet, caplog, service, markets):
-    config = {
+    config = Configuration(**{
+        **BASE_CONFIG,
         "name": "some name",
         "date": "2022-01-01",
         "market": markets,
         "service": service,
-    }
+    })
+
     error_msg = ""
     if 'spot' in markets:
         error_msg = 'Master or worker is a spot instance; you cannot start a spot instance'

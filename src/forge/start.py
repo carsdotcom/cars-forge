@@ -5,8 +5,9 @@ import sys
 import boto3
 
 from . import REQUIRED_ARGS
-from .parser import add_basic_args, add_general_args, add_env_args
-from .common import ec2_ip, get_ip, set_boto_session, get_nlist
+from .parser import add_basic_args, add_general_args, add_env_args, add_job_args, add_action_args
+from .common import ec2_ip, get_ip, get_nlist
+from .configuration import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,8 @@ def cli_start(subparsers):
     parser = subparsers.add_parser('start', description='start an on-demand EC2')
     add_basic_args(parser)
     add_general_args(parser)
+    add_job_args(parser, suppress=True)
+    add_action_args(parser, suppress=True)
     add_env_args(parser)
 
     REQUIRED_ARGS['start'] = ['name',
@@ -33,19 +36,16 @@ def cli_start(subparsers):
                               'forge_env']
 
 
-def start_fleet(n_list, config):
+def start_fleet(n_list, config: Configuration):
     """starts each fleet in n_list
 
     Parameters
     ----------
     n_list : list
         List of fleet names
-    config : dict
+    config : Configuration
         Forge configuration data
     """
-    profile = config.get('aws_profile')
-    region = config.get('region')
-    set_boto_session(region, profile)
     client = boto3.client('ec2')
 
     details = {n: ec2_ip(n, config) for n in n_list}
@@ -67,19 +67,21 @@ def start_fleet(n_list, config):
             client.start_instances(InstanceIds=[uid])
 
 
-def start(config):
+def start(config: Configuration):
     """start a stopped on-demand EC2 instance
 
     Parameters
     ----------
-    config : dict
+    config : Configuration
         Forge configuration data
     """
-    market = config.get('market')
+    market = config.market
 
     if 'spot' in market:
         logger.error('Master or worker is a spot instance; you cannot start a spot instance')
         # sys.exit(1)  # ToDo: Should we change the tests to reflect an exit or allow it to continue?
 
-    n_list = get_nlist({**config, 'rr_all': True})
+    config.rr_all = True
+
+    n_list = get_nlist(config)
     start_fleet(n_list, config)
