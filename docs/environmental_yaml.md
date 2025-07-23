@@ -60,6 +60,7 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	    error: "Invalid Spark version. Only 2.3, 3.0, and 3.1 are supported."
     ```
 - **aws_az** - The [AWS availability zone](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) where Forge will create the EC2 instance. If set, multi-az placement will be disabled.
+- **aws_imds_v2** - Toggle if [AWS IMDSv2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html) is required.
 - **aws_region** - The AWS region for Forge to run in- **aws_profile** - [AWS CLI profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) to use
 - **aws_security_group** - [AWS Security Group](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-security-groups.html) for the instance
 - **aws_subnet** - [AWS subnet](https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html) where the EC2s will run
@@ -75,9 +76,11 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	- default is [8, 8]
 - **ec2_amis** - A dictionary of dictionaries to store [AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) info.
 	- Needs three parameters: 
-			- ami id
-			- minimum disk size
-			- [device name](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html)
+		- ami id
+        - minimum disk size
+        - [device name](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html)
+    - Optional parameters:
+      	- [AWS IMDS max hops](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-options.html)
 	- E.g.
 	```yaml
 	ec2_amis:
@@ -85,6 +88,7 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	    ami: ami-abcdefghi12345678
 	    disk: 30
 	    disk_device_name: /dev/sda1
+  		aws_imds_max_hops: 2
 	  cluster:
 	    ami: ami-12345678abcdefghi
 	    disk: 30
@@ -93,6 +97,7 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	    ami: ami-abcdefghi00000000
 	    disk: 90
 	    disk_device_name: /dev/sda1
+ 		aws_imds_max_hops: 2
 	```
 - **ec2_key** - The [key pair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) name used to ssh into the EC2. This will be stored in `forge_pem_secret`
 - **ec2_max** - Override the default maximum amount of RAM a single instance can have. The default is 768.
