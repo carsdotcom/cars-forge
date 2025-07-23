@@ -88,7 +88,7 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	    ami: ami-abcdefghi12345678
 	    disk: 30
 	    disk_device_name: /dev/sda1
-  		aws_imds_max_hops: 2
+	    aws_imds_max_hops: 2
 	  cluster:
 	    ami: ami-12345678abcdefghi
 	    disk: 30
@@ -97,7 +97,7 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	    ami: ami-abcdefghi00000000
 	    disk: 90
 	    disk_device_name: /dev/sda1
- 		aws_imds_max_hops: 2
+	    aws_imds_max_hops: 2
 	```
 - **ec2_key** - The [key pair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html) name used to ssh into the EC2. This will be stored in `forge_pem_secret`
 - **ec2_max** - Override the default maximum amount of RAM a single instance can have. The default is 768.
