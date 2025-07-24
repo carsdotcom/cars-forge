@@ -134,6 +134,8 @@ def add_job_args(parser, *, suppress: bool = False):
     common_grp.add_argument('--user_data', '--user-data', nargs='*', help=help_message)
     common_grp.add_argument('--gpu', action='store_true', dest='gpu_flag', default=None, help=help_message)
     common_grp.add_argument('--destroy_on_create', '--destroy-on-create', action='store_true', default=None, help=help_message)
+    common_grp.add_argument('--ami', help=help_message)
+    common_grp.add_argument('--disk_device_name', '--disk-device-name', help=help_message)
 
 
 def add_action_args(parser, *, suppress: bool = False):

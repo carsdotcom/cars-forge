@@ -313,6 +313,10 @@ def create_template(n, config: Configuration, task):
     market = market[-1] if task == 'cluster-worker' else market[0]
     if service:
         if user_ami[:4] == "ami-":
+            if not user_disk or not user_disk_device_name:
+                logger.error('disk and disk_device_name must be specified when manually setting an AMI ID')
+                sys.exit(1)
+
             ami, disk, disk_device_name = (user_ami, user_disk, user_disk_device_name)
         else:
             if gpu:
