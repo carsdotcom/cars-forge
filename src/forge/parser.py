@@ -177,7 +177,7 @@ def add_env_args(parser):
     env_cfg_grp.add_argument('--aws_imds_max_hops', '--aws-imds-max-hops', type=int, default=None)
     env_cfg_grp.add_argument('--aws_subnet', '--aws-subnet')
     env_cfg_grp.add_argument('--ec2_key', '--ec2-key')
-    env_cfg_grp.add_argument('--aws_security_group', '--aws_security-group')
+    env_cfg_grp.add_argument('--aws_security_group', '--aws_security-group', nargs='+')
     env_cfg_grp.add_argument('--excluded_ec2s', '--excluded-ec2s', nargs='+', metavar='EC2_TYPE', default=None)
     env_cfg_grp.add_argument('--destroy_after_success', '--destroy-after-success', action='store_true', default=None)
     env_cfg_grp.add_argument('--destroy_after_failure', '--destroy-after-failure', action='store_true', default=None)

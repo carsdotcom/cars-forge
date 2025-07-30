@@ -37,7 +37,7 @@ class Configuration:
     aws_profile: Optional[str] = None
     aws_region: Optional[str] = None
     aws_role: Optional[str] = None
-    aws_security_group: Optional[str] = None
+    aws_security_group: Optional[list[str]] = None
     aws_subnet: Optional[str] = None
     config_dir: Optional[str] = None
     cpu: Optional[MachineSpec] = None
@@ -236,6 +236,7 @@ class Configuration:
         aws_region = config_dict.get('aws_region')
         aws_multi_az = config_dict.get('aws_multi_az')
         aws_subnet = config_dict.get('aws_subnet')
+        aws_security_group = config_dict.get('aws_security_group')
 
         cpu = config_dict.get('cpu')
         ram = config_dict.get('ram')
@@ -261,6 +262,10 @@ class Configuration:
 
         if aws_region:
             config_dict['region'] = aws_region
+
+        if aws_security_group:
+            if isinstance(aws_security_group, str):
+                config_dict['aws_security_group'] = [aws_security_group]
 
         def _parse_list(option):
             """Parse a list option.
