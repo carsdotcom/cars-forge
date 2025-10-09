@@ -52,6 +52,7 @@ class Configuration:
     excluded_ec2s: Optional[list] = None
     gpu_flag: Optional[bool] = DEFAULT_ARG_VALS['gpu_flag']
     home_dir: Optional[str] = None
+    instance_type: Optional[list[Optional[str]]] = None
     log_level: Optional[Literal['DEBUG', 'INFO', 'WARNING', 'ERROR']] = DEFAULT_ARG_VALS['log_level']
     market: Optional[Union[str, list[str]]] = field(default_factory=lambda: DEFAULT_ARG_VALS['market'])
     market_failover: Optional[bool] = None  # ToDo: Remove
@@ -241,6 +242,7 @@ class Configuration:
         cpu = config_dict.get('cpu')
         ram = config_dict.get('ram')
         ratio = config_dict.get('ratio')
+        instance_type = config_dict.get('instance_type')
         ec2_max = config_dict.get('ec2_max')
 
         if aws_az and aws_multi_az:
@@ -322,9 +324,18 @@ class Configuration:
                     logger.error('ratio must have %s values for service %s', min_values, service)
                     sys.exit(1)
 
+                if instance_type and len(instance_type) != min_values:
+                    logger.error('instance_type must have %s values for service %s', min_values, service)
+                    sys.exit(1)
+
+
         # Random checks and transformations to conform to Forge's quirks
         if excluded_ec2s := cli_config.get('excluded_ec2s'):
-            config_dict['excluded_ec2s'] = list(sorted(set(config_dict['excluded_ec2s'] + cli_config['excluded_ec2s'])))
+            config_dict['excluded_ec2s'] = excluded_ec2s = list(sorted(set(config_dict['excluded_ec2s'] + cli_config['excluded_ec2s'])))
+
+            if instance_type and instance_type in excluded_ec2s:
+                logger.error('The instance type %s is excluded from use by excluded_ec2s', instance_type)
+                sys.exit(1)
 
         if not config_dict.get('aws_role'):
             logger.warning('No aws_role specified, continuing...')

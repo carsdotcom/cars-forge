@@ -60,7 +60,7 @@ def nonnegative_int_arg(string):
     return number
 
 
-def list_string(string):
+def list_string(string, allowed_types):
     """helper function to check that checks a string is alist
 
     Passes string to ast.literal_eval to parse, and if it cannot then it raises an error.
@@ -69,6 +69,8 @@ def list_string(string):
     ----------
     string : str
         The list to parse by ast.literal_eval
+    allowed_types : list[type]
+        The types allowed in the container
 
     Returns
     -------
@@ -78,17 +80,21 @@ def list_string(string):
     Raises
     ------
     argparse.ArgumentTypeError
-        If the string is not a list of list of ints
+        If the string is not a list of list of allowed_types
     """
-    msg = 'Must be a string that can be formatted by ast.literal_eval into list[list[int]]'
+    msg = 'Must be a string that can be formatted by ast.literal_eval'
     try:
         ret = literal_eval(string)
     except ValueError:
         raise argparse.ArgumentTypeError(msg) from None
 
     for i in ret:
-        for j in i:
-            if not isinstance(j, int):
+        if isinstance(i, list):
+            for j in i:
+                if type(j) not in allowed_types:
+                    raise argparse.ArgumentTypeError(msg)
+        else:
+            if type(i) not in allowed_types:
                 raise argparse.ArgumentTypeError(msg)
 
     return ret
@@ -124,10 +130,17 @@ def add_job_args(parser, *, suppress: bool = False):
     if suppress:
         help_message = argparse.SUPPRESS
 
+    def _list_string_of_ints(string):
+        return list_string(string, [int, str])
+
+    def _list_string_of_optional_strings(string):
+        return list_string(string, [str, type(None)])
+
     common_grp = parser.add_argument_group('Common job arguments')
-    common_grp.add_argument('--ram', type=list_string, help=help_message)
-    common_grp.add_argument('--cpu', type=list_string, help=help_message)
-    common_grp.add_argument('--ratio', type=list_string, help=help_message)
+    common_grp.add_argument('--ram', type=_list_string_of_ints, help=help_message)
+    common_grp.add_argument('--cpu', type=_list_string_of_ints, help=help_message)
+    common_grp.add_argument('--ratio', type=_list_string_of_ints, help=help_message)
+    common_grp.add_argument('--instance_type', '--instance-type', type=_list_string_of_optional_strings, help=help_message)
     common_grp.add_argument('--aws_role', '--aws-role', help=help_message)
     common_grp.add_argument('--disk', type=positive_int_arg, help=help_message)
     common_grp.add_argument('--valid_time', '--valid-time', type=positive_int_arg, help=help_message)

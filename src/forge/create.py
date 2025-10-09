@@ -370,10 +370,14 @@ def create_template(n, config: Configuration, task):
     valid_until = now_utc + timedelta(hours=int(valid))  # Used in tags for cleanup. DO NOT DELETE
 
     access_vars = user_accessible_vars(config, market=market, task=task)
+
     tags = [{k: fmt.format(v, **access_vars) for k, v in inner.items()} for inner in tags] if tags else None
     tags = [inner for inner in tags if None not in inner.values()]
     tags.append({'Key': 'forge-name', 'Value': n})
-    specs = {'TagSpecifications': [{'ResourceType': 'instance', 'Tags': tags}]} if tags else {}
+
+    launch_template_kwargs = {}
+    if tags:
+        launch_template_kwargs['TagSpecifications'] = [{'ResourceType': 'instance', 'Tags': tags}]
 
     if sg:
         specs['SecurityGroupIds'] = sg
@@ -400,7 +404,7 @@ def create_template(n, config: Configuration, task):
             'InstanceInitiatedShutdownBehavior': 'terminate',
             'UserData': u,
             'MetadataOptions': metadata_options,
-            **specs
+            **launch_template_kwargs
         },
         TagSpecifications=[{
             'ResourceType': 'launch-template',
@@ -502,17 +506,25 @@ def get_placement_az(config: Configuration, instance_details, mode=None):
     az_info = client.describe_availability_zones()
     az_mapping = {x['ZoneId']: x['ZoneName'] for x in az_info['AvailabilityZones']}
 
+    kwargs = {}
+    if instance_details['instance_type']:
+        kwargs['InstanceTypes'] = [instance_details['instance_type']]
+    else:
+        kwargs = {
+            'InstanceRequirementsWithMetadata': {
+                'ArchitectureTypes': ['x86_64'],  # ToDo: Make configurable
+                'InstanceRequirements': instance_details['override_instance_stats']
+            }
+        }
+
     try:
         response = client.get_spot_placement_scores(
             TargetCapacity=instance_details['total_capacity'],
             TargetCapacityUnitType=instance_details['capacity_unit'],
             SingleAvailabilityZone=True,
             RegionNames=[region],
-            InstanceRequirementsWithMetadata={
-                'ArchitectureTypes': ['x86_64'],  # ToDo: Make configurable
-                'InstanceRequirements': instance_details['override_instance_stats']
-            },
             MaxResults=10,
+            **kwargs
         )
 
         placement = {az_mapping[x['AvailabilityZoneId']]: x['Score'] for x in response['SpotPlacementScores']}
@@ -576,6 +588,7 @@ def create_fleet(n, config: Configuration, task, instance_details):
     now_utc = now_utc.replace(microsecond=0)
     valid_until = now_utc + timedelta(hours=int(valid))
     subnet = config.aws_multi_az
+    instance_type = config.instance_type
 
     gpu = config.gpu_flag or False
     market = config.market or DEFAULT_ARG_VALS['market']
@@ -607,7 +620,6 @@ def create_fleet(n, config: Configuration, task, instance_details):
         },
         'TargetCapacitySpecification': {
             'TotalTargetCapacity': instance_details['total_capacity'],
-            'TargetCapacityUnitType': instance_details['capacity_unit'],
             'DefaultTargetCapacityType': market
         },
         'Type': 'maintain',
@@ -626,19 +638,25 @@ def create_fleet(n, config: Configuration, task, instance_details):
     if not tags:
         kwargs.pop('TagSpecifications')
 
-    if gpu:
-        instance_details['override_instance_stats']['AcceleratorTypes'] = ['gpu']
-    if excluded_ec2s:
-        instance_details['override_instance_stats']['ExcludedInstanceTypes'] = excluded_ec2s
-
     launch_template_config = {
         'LaunchTemplateSpecification': {'LaunchTemplateName': n, 'Version': '1'},
         'Overrides': [{
             'SubnetId': subnet[az],
             'AvailabilityZone': az,
-            'InstanceRequirements': instance_details['override_instance_stats']
         }]
     }
+
+    if instance_details['instance_type']:
+        launch_template_config['Overrides'][0]['InstanceType'] = instance_details['instance_type']
+    else:
+        if gpu:
+            instance_details['override_instance_stats']['AcceleratorTypes'] = ['gpu']
+        if excluded_ec2s:
+            instance_details['override_instance_stats']['ExcludedInstanceTypes'] = excluded_ec2s
+
+        launch_template_config['Overrides'][0]['InstanceRequirements'] = instance_details['override_instance_stats']
+        kwargs['TargetCapacitySpecification']['TargetCapacityUnitType'] = instance_details['capacity_unit']
+
     kwargs['LaunchTemplateConfigs'] = [launch_template_config]
     kwargs['region'] = region
     logger.debug(kwargs)
@@ -715,16 +733,17 @@ def get_instance_details(config: Configuration, task_list):
     ratio = config.ratio
     worker_count = config.workers
     destroy_flag = config.destroy_after_failure
+    instance_type = config.instance_type
 
     rc_length = 1 if service == 'single' else 2 if service == 'cluster' else None
 
-    if not ram and not cpu:
-        logger.error('Invalid configuration, either ram or cpu must be provided.')
+    if not ram and not cpu and not instance_type:
+        logger.error('Invalid configuration, either ram, cpu, or instance_type must be provided.')
         if destroy_flag:
             destroy(config)
         sys.exit(1)
-    elif (ram and len(ram) != rc_length) or (cpu and len(cpu) != rc_length):
-        logger.error('Invalid configuration, ram or cpu must have one value for single jobs, and two for cluster jobs.')
+    elif (ram and len(ram) != rc_length) or (cpu and len(cpu) != rc_length) or (instance_type and len(instance_type) != rc_length):
+        logger.error('Invalid configuration, ram, cpu, or instance_type must have one value for single jobs, and two for cluster jobs.')
         if destroy_flag:
             destroy(config)
         sys.exit(1)
@@ -739,9 +758,15 @@ def get_instance_details(config: Configuration, task_list):
         task_worker_count = worker_count
         if 'cluster-master' in task or 'single' in task:
             task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 0), cpu=_check(cpu, 0), ratio=_check(ratio, 0))
+            task_instance_type = _check(instance_type, 0)
+
             task_worker_count = 1
         elif 'cluster-worker' in task:
             task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 1), cpu=_check(cpu, 1), ratio=_check(ratio, 1), workers=task_worker_count)
+            task_instance_type = _check(instance_type, 1)
+
+            if task_instance_type:
+                task_worker_count = config.workers or 1
         else:
             logger.error("'%s' does not seem to be a valid cluster or single job.", task)
             if destroy_flag:
@@ -750,7 +775,11 @@ def get_instance_details(config: Configuration, task_list):
 
         logger.debug('%s OVERRIDE DETAILS | RAM: %s out of %s | CPU: %s with ratio of %s', task, task_ram, total_ram, task_cpu, ram2cpu_ratio)
 
+        if task_instance_type:
+            logger.warning('For task %s, the configured instance type will override the configured ram/cpu values', task)
+
         instance_details[task] = {
+            'instance_type': task_instance_type,
             'total_capacity': task_worker_count or total_ram,
             'capacity_unit': 'units' if task_worker_count else 'memory-mib',
             'override_instance_stats': {
