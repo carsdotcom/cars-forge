@@ -137,15 +137,13 @@ def get_status(client, ec2_id):
     return status
 
 
-def create_status(n, request, config: Configuration):
+def create_status(request_list, config: Configuration):
     """create the console status messages for Forge
 
     Parameters
     ----------
-    n : str
-        Fleet name
-    request : dict
-        Response data from Boto3 create_fleet
+    request_list: list
+        List of requests and fleet names
     config : Configuration
         Forge configuration data
     """
@@ -153,89 +151,117 @@ def create_status(n, request, config: Configuration):
 
     client = boto3.client('ec2')
 
-    logger.info('Creating Fleet... - 0s elapsed')
+    fleet_info = {}
+
+    for (n, request) in request_list:
+        logger.info('Creating Fleet %s... - 0s elapsed', n)
+
+        fleet_info[n] = {
+            'n': n,
+            'time': 10,
+            'time_without_spot': 0,
+            'time_without_instance': 0,
+            'fleet_id': '',
+            'current_status': '',
+            'create_time': '',
+            'fulfilled': False,
+            'initialized': False,
+            'ec2_id_list': [],
+        }
+
     time.sleep(10)
-    t = 10
-    logger.info('Creating... - %ds elapsed', t)
 
-    fleet_id = request.get('FleetId')
-    fleet_description = client.describe_fleets(FleetIds=[fleet_id])
-    fleet_details = fleet_description.get('Fleets', [{}])[0]
-    current_status = fleet_details.get('ActivityStatus')
-    create_time = fleet_details.get('CreateTime')
-    time_without_spot = 0
-    while current_status != 'fulfilled':
-        if config.create_timeout and t > config.create_timeout:
-            logger.error('Timeout of %s seconds hit for instance fulfillment; Aborting.', config.create_timeout)
-            if destroy_flag:
-                destroy(config)
-            exit_callback(config, exit=True)
-
-        if current_status == 'pending_fulfillment':
-            time.sleep(10)
-            t += 10
-            logger.info('Creating... - %ds elapsed', t)
-        else:
-            if time_without_spot == 70:
-                logger.error('Could not create fleet request. Last status: %s.', current_status)
-                if destroy_flag:
-                    destroy(config)
-                error_details = get_fleet_error(client, fleet_id, create_time)
-                logger.error('Last status details: %s', error_details)
-                exit_callback(config, exit=True)
-            time.sleep(10)
-            t += 10
-            time_without_spot += 10
-            logger.info('Searching... - %ds elapsed', t)
+    for (n, request) in request_list:
+        fleet_info[n]['fleet_id'] = fleet_id = request.get('FleetId')
         fleet_description = client.describe_fleets(FleetIds=[fleet_id])
-        current_status = fleet_description.get('Fleets', [{}])[0].get('ActivityStatus')
+        fleet_info[n]['create_time'] = fleet_description.get('Fleets', [{}])[0].get('CreateTime')
 
-    logger.info('Fleet fulfilled.')
+    uninitialized_fleets = list(filter(lambda x: not x['initialized'], fleet_info.values()))
+    while uninitialized_fleets:
+        for fleet in uninitialized_fleets:
+            n = fleet['n']
+            fleet_id = fleet['fleet_id']
+            fleet_time = fleet['time']
+            fleet_time_without_spot = fleet['time_without_spot']
+            fleet_time_without_instance = fleet['time_without_instance']
+            fleet_ec2_id_list = fleet['ec2_id_list']
 
-    ec2_id_list = []
-    time_without_instance = 0
-    list_len = 0
-    while list_len == 0:
-        time.sleep(10)
-        t += 10
-        time_without_instance += 10
-        if time_without_instance == 70:
-            logger.error('The EC2 spot instance failed to start, please try again.')
-            if destroy_flag:
-                destroy(config)
-            exit_callback(config, exit=True)
-        logger.info('Finding EC2... - %ds elapsed', t)
-        fleet_request_configs = client.describe_fleet_instances(FleetId=fleet_id)
-        active_instances_list = fleet_request_configs.get('ActiveInstances')
-        for ec2 in active_instances_list:
-            ec2_id_list.append(ec2.get('InstanceId'))
-        list_len = len(ec2_id_list)
+            fleet_description = client.describe_fleets(FleetIds=[fleet_id])
+            fleet_info[n]['current_status'] = current_status = fleet_description.get('Fleets', [{}])[0].get('ActivityStatus')
 
-    logger.debug('EC2 list is: %s', ec2_id_list)
-    config['ec2_id_list'] = ec2_id_list  # ToDo: Investigate what this option is
-    time_without_instance = 0
-    for s in ec2_id_list:
-        status = 'initializing'
-        while status != 'ok':
-            time.sleep(10)
-            t += 10
-            logger.info('EC2 Initializing... - %ds elapsed', t)
-            status = get_status(client, s)
-            logger.debug('Current status: %s', status)
-            if status == 'no-status':
-                time_without_instance += 10
-                if time_without_instance == 70:
-                    logger.error('The EC2 spot instance failed to start, please try again.')
+            if current_status != 'fulfilled':
+                if config.create_timeout and fleet_time > config.create_timeout:
+                    logger.error('Timeout of %s seconds hit for instance fulfillment for %s; Aborting.', config.create_timeout, n)
                     if destroy_flag:
                         destroy(config)
                     exit_callback(config, exit=True)
-            elif status not in {'initializing', 'ok'}:
-                logger.error('Could not start instance. Last EC2 status: %s', status)
-                if destroy_flag:
-                    destroy(config)
-                exit_callback(config, exit=True)
-    logger.info('EC2 initialized.')
-    pricing(n, config, fleet_id)
+
+                if current_status == 'pending_fulfillment':
+                    logger.info('Creating %s... - %ds elapsed', n, fleet_time)
+                else:
+                    if fleet_time_without_spot == 70:
+                        logger.error('Could not create fleet request %s. Last status: %s.', n, current_status)
+                        if destroy_flag:
+                            destroy(config)
+                        error_details = get_fleet_error(client, fleet_id, fleet['create_time'])
+                        logger.error('Last status details: %s', error_details)
+                        exit_callback(config, exit=True)
+
+                    logger.info('Searching for %s... - %ds elapsed', n, fleet_time)
+
+                    fleet_info[fleet['n']]['time_without_spot'] += 10
+            else:
+                if not fleet['fulfilled']:
+                    logger.info('Fleet %s fulfilled.', n)
+                    fleet_info[n]['fulfilled'] = True
+
+                list_len = len(fleet_ec2_id_list)
+
+                if list_len == 0:
+                    if fleet_time_without_instance >= 70:
+                        logger.error('The EC2 spot instance failed to start for %s, please try again.', n)
+                        if destroy_flag:
+                            destroy(config)
+                        exit_callback(config, exit=True)
+
+                    logger.info('Finding EC2 for %s... - %ds elapsed', n, fleet_time)
+
+                    fleet_request_configs = client.describe_fleet_instances(FleetId=fleet_id)
+                    active_instances_list = fleet_request_configs.get('ActiveInstances')
+                    for ec2 in active_instances_list:
+                        fleet_info[n]['ec2_id_list'].append(ec2.get('InstanceId'))
+
+                    fleet_info[n]['time_without_instance'] += 10
+                else:
+                    for s in fleet_ec2_id_list:
+                        status = get_status(client, s)
+                        logger.debug('Current status for %s: %s', n, status)
+
+                        if status != 'ok':
+                            logger.info('EC2 Initializing for %s... - %ds elapsed', n, fleet_time)
+
+                            if status == 'no-status':
+                                if fleet_time_without_instance >= 70:
+                                    logger.error('The EC2 spot instance failed to start for %s, please try again.', n)
+                                    if destroy_flag:
+                                        destroy(config)
+                                    exit_callback(config, exit=True)
+
+                                fleet_info[n]['time_without_instance'] += 10
+                            elif status not in {'initializing', 'ok'}:
+                                logger.error('Could not start instance for %s. Last EC2 status: %s', n, status)
+                                if destroy_flag:
+                                    destroy(config)
+                                exit_callback(config, exit=True)
+                        else:
+                            logger.info('EC2 initialized for %s.', n)
+                            fleet_info[n]['initialized'] = True
+                            pricing(n, config, fleet_id)
+
+            fleet_info[n]['time'] += 10
+
+        time.sleep(10)
+        uninitialized_fleets = list(filter(lambda x: not x['initialized'], fleet_info.values()))
 
 
 def pricing(n, config: Configuration, fleet_id):
@@ -277,9 +303,9 @@ def pricing(n, config: Configuration, fleet_id):
         for ec2_type in fleet_types:
             total_spot_cost += get_ec2_pricing(ec2_type, market, config)
         saving = 100 * (1 - (total_spot_cost / total_on_demand_cost))
-        logger.info('Hourly price is $%.2f. Savings of %.2f%%', total_spot_cost, saving)
+        logger.info('Hourly price for %s is $%.2f. Savings of %.2f%%', n, total_spot_cost, saving)
     elif market == 'on-demand':
-        logger.info('Hourly price is $%.2f', total_on_demand_cost)
+        logger.info('Hourly price for %s is $%.2f', n, total_on_demand_cost)
 
 
 def create_template(n, config: Configuration, task):
@@ -579,6 +605,11 @@ def create_fleet(n, config: Configuration, task, instance_details):
         Forge service to run
     instance_details: dict
         EC2 instance details for create_fleet
+
+    Returns
+    -------
+    dict
+        Response from Boto3 create_fleet
     """
     valid = config.valid_time or DEFAULT_ARG_VALS['valid_time']
     excluded_ec2s = config.excluded_ec2s
@@ -662,60 +693,72 @@ def create_fleet(n, config: Configuration, task, instance_details):
     logger.debug(kwargs)
     request = fleet_request(kwargs)
     logger.debug(request)
-    create_status(n, request, config)
+
+    return request
+    #create_status(n, request, config)
 
 
-def search_and_create(config: Configuration, task, instance_details):
+def search_and_create(config: Configuration, instance_details):
     """check for running instances and create new ones if necessary
 
     Parameters
     ----------
     config : Configuration
         Forge configuration data
-    task : str
-        Forge service to run
     instance_details: dict
         EC2 instance details for create_fleet
     """
-    if not config.ram and not config.cpu:
-        logger.error('Please supply either a ram or cpu value to continue.')
+    if not config.ram and not config.cpu and not config.instance_type:
+        logger.error('Please supply either a ram, cpu, or instance_type value to continue.')
         sys.exit(1)
 
     name = config.name
     date = config.date or ''
-    market = config.market or DEFAULT_ARG_VALS['market']
+    markets = config.market or DEFAULT_ARG_VALS['market']
 
-    market = market[-1] if task == 'cluster-worker' else market[0]
+    create_tasks = []
 
-    n = f'{name}-{market}-{task}-{date}'
+    for task in instance_details.keys():
+        market = markets[-1] if task == 'cluster-worker' else markets[0]
+        n = f'{name}-{market}-{task}-{date}'
 
-    detail = ec2_ip(n, config)
-
-    if len(detail) == 1:
-        e = detail[0]
-        if e['state'] in ['running', 'stopped', 'stopping', 'pending']:
-            logger.info('%s is %s, the IP is %s', task, e['state'], e['ip'])
-
-            if config.destroy_on_create:
-                logger.info('destroy_on_create true, destroying fleet.')
-                destroy(config)
-                create_template(n, config, task)
-                create_fleet(n, config, task, instance_details)
-        else:
-            if len(e['fleet_id']) != 0:
-                logger.info('Fleet is running without EC2, will recreate it.')
-                destroy(config)
-            create_template(n, config, task)
-            create_fleet(n, config, task, instance_details)
-    elif len(detail) > 1 and task != 'cluster-worker':
-        logger.info('Multiple %s instances running, destroying and recreating', task)
-        destroy(config)
-        create_template(n, config, task)
-        create_fleet(n, config, task, instance_details)
         detail = ec2_ip(n, config)
-        for e in detail:
-            if e['state'] == 'running':
-                logger.info('%s is running, the IP is %s', task, e['ip'])
+
+        if len(detail) == 1:
+            e = detail[0]
+            if e['state'] in ['running', 'stopped', 'stopping', 'pending']:
+                logger.info('%s is %s, the IP is %s', task, e['state'], e['ip'])
+
+                if config.destroy_on_create:
+                    logger.info('destroy_on_create true, destroying fleet.')
+                    destroy(config)
+                    create_template(n, config, task)
+                    create_tasks.append((task, n))
+                    #create_fleet(n, config, task, instance_details)
+            else:
+                if len(e['fleet_id']) != 0:
+                    logger.info('Fleet is running without EC2, will recreate it.')
+                    destroy(config)
+                create_template(n, config, task)
+                create_tasks.append((task, n))
+                #create_fleet(n, config, task, instance_details)
+        elif len(detail) > 1 and task != 'cluster-worker':
+            logger.info('Multiple %s instances running, destroying and recreating', task)
+            destroy(config)
+            create_template(n, config, task)
+            create_tasks.append((task, n))
+            #create_fleet(n, config, task, instance_details)
+            #detail = ec2_ip(n, config)
+            #for e in detail:
+                #if e['state'] == 'running':
+                    #logger.info('%s is running, the IP is %s', task, e['ip'])
+
+    fleet_requests = []
+    for task, n in create_tasks:
+        request = create_fleet(n, config, task, instance_details[task])
+        fleet_requests.append((n, request))
+
+    create_status(fleet_requests, config)
 
 
 def get_instance_details(config: Configuration, task_list):
@@ -765,7 +808,7 @@ def get_instance_details(config: Configuration, task_list):
             task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 1), cpu=_check(cpu, 1), ratio=_check(ratio, 1), workers=task_worker_count)
             task_instance_type = _check(instance_type, 1)
 
-            if task_instance_type:
+            if task_instance_type: # ToDo: calculate RAM maximum
                 task_worker_count = config.workers or 1
         else:
             logger.error("'%s' does not seem to be a valid cluster or single job.", task)
@@ -814,5 +857,4 @@ def create(config: Configuration):
     if not config.aws_az:
         config.aws_az = get_placement_az(config, instance_details[task_list[-1]])
 
-    for task in task_list:
-        search_and_create(config, task, instance_details[task])
+    search_and_create(config, instance_details)

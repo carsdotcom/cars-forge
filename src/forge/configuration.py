@@ -351,6 +351,7 @@ class Configuration:
 
         return config
 
+    # ToDo: validate instance type
     def validate(self) -> bool:
         return self.validate_aws_permissions() and self.validate_job_args()
 
