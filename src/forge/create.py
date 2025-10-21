@@ -375,6 +375,9 @@ def create_template(n, config: Configuration, task):
     tags.append({'Key': 'forge-name', 'Value': n})
     specs = {'TagSpecifications': [{'ResourceType': 'instance', 'Tags': tags}]} if tags else {}
 
+    if sg:
+        specs['SecurityGroupIds'] = sg
+
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
 
     imds_v2 = 'required' if config.aws_imds_v2 else 'optional'
@@ -396,7 +399,6 @@ def create_template(n, config: Configuration, task):
             'KeyName': key,
             'InstanceInitiatedShutdownBehavior': 'terminate',
             'UserData': u,
-            'SecurityGroupIds': [sg],
             'MetadataOptions': metadata_options,
             **specs
         },

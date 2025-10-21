@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5]
+
+### Changed
+- **Configuration** - Allowed for a list of security group IDs rather than just a single one
+- **Create** - Added checks for if security groups are passed or not
+- **Parser** - Allowed multiple security groups to be passed via the CLI
+
 ## [1.3.4]
 
 ### Changed
@@ -104,7 +111,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - **Initial commit** - Forge source code, unittests, docs, pyproject.toml, README.md, and LICENSE files.
 
-[unreleased]: https://github.com/carsdotcom/cars-forge/compare/v1.3.4...HEAD
+[unreleased]: https://github.com/carsdotcom/cars-forge/compare/v1.3.5...HEAD
+[1.3.5]: https://github.com/carsdotcom/cars-forge/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/carsdotcom/cars-forge/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/carsdotcom/cars-forge/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/carsdotcom/cars-forge/compare/v1.3.1...v1.3.2
