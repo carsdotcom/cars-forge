@@ -761,7 +761,7 @@ def search_and_create(config: Configuration, instance_details):
     create_status(fleet_requests, config)
 
 
-def get_instance_details(config: Configuration, task_list):
+def get_instance_details(config: Configuration, task_list, *, worker_units: bool = True):
     """calculate instance details & resources for fleet creation
     Parameters
     ----------
@@ -769,7 +769,10 @@ def get_instance_details(config: Configuration, task_list):
         Forge configuration data
     task_list : list
         Forge services to get details of
+    worker_units : bool
+        Whether the number of workers should be discretely set (True, default) or inferred (False)
     """
+    job = config.job
     service = config.service
     ram = config.ram
     cpu = config.cpu
@@ -781,10 +784,11 @@ def get_instance_details(config: Configuration, task_list):
     rc_length = 1 if service == 'single' else 2 if service == 'cluster' else None
 
     if not ram and not cpu and not instance_type:
-        logger.error('Invalid configuration, either ram, cpu, or instance_type must be provided.')
-        if destroy_flag:
-            destroy(config)
-        sys.exit(1)
+        if job != 'modify':
+            logger.error('Invalid configuration, either ram, cpu, or instance_type must be provided.')
+            if destroy_flag:
+                destroy(config)
+            sys.exit(1)
     elif (ram and len(ram) != rc_length) or (cpu and len(cpu) != rc_length) or (instance_type and len(instance_type) != rc_length):
         logger.error('Invalid configuration, ram, cpu, or instance_type must have one value for single jobs, and two for cluster jobs.')
         if destroy_flag:
@@ -799,14 +803,23 @@ def get_instance_details(config: Configuration, task_list):
 
     for task in task_list:
         task_worker_count = worker_count
+
+        calc_kwargs = {}
+
         if 'cluster-master' in task or 'single' in task:
-            task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 0), cpu=_check(cpu, 0), ratio=_check(ratio, 0))
+            task_ram = _check(ram, 0)
+            task_cpu = _check(cpu, 0)
+            task_ratio = _check(ratio, 0)
             task_instance_type = _check(instance_type, 0)
 
             task_worker_count = 1
         elif 'cluster-worker' in task:
-            task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=_check(ram, 1), cpu=_check(cpu, 1), ratio=_check(ratio, 1), workers=task_worker_count)
+            task_ram = _check(ram, 1)
+            task_cpu = _check(cpu, 1)
+            task_ratio = _check(ratio, 1)
             task_instance_type = _check(instance_type, 1)
+
+            calc_kwargs['workers'] = task_worker_count
 
             if task_instance_type: # ToDo: calculate RAM maximum
                 task_worker_count = config.workers or 1
@@ -816,22 +829,35 @@ def get_instance_details(config: Configuration, task_list):
                 destroy(config)
             sys.exit(1)
 
-        logger.debug('%s OVERRIDE DETAILS | RAM: %s out of %s | CPU: %s with ratio of %s', task, task_ram, total_ram, task_cpu, ram2cpu_ratio)
-
-        if task_instance_type:
-            logger.warning('For task %s, the configured instance type will override the configured ram/cpu values', task)
-
         instance_details[task] = {
             'instance_type': task_instance_type,
-            'total_capacity': task_worker_count or total_ram,
+            'total_capacity': task_worker_count,
             'capacity_unit': 'units' if task_worker_count else 'memory-mib',
-            'override_instance_stats': {
+        }
+
+        if (task_ram and task_ram[0]) or (task_cpu and task_cpu[0]):
+            task_ram, task_cpu, total_ram, ram2cpu_ratio = calc_machine_ranges(ram=task_ram, cpu=task_cpu, ratio=task_ratio, **calc_kwargs)
+            logger.debug('%s OVERRIDE DETAILS | RAM: %s out of %s | CPU: %s with ratio of %s', task, task_ram, total_ram, task_cpu, ram2cpu_ratio)
+
+            instance_details[task]['total_capacity'] = total_ram
+            instance_details[task]['capacity_unit'] = 'memory-mib'
+
+            if task_worker_count:
+                if worker_units:
+                    instance_details[task]['total_capacity'] = task_worker_count
+                    instance_details[task]['capacity_unit'] = 'units'
+                else:
+                    logger.warning('Number of workers specified, but fleet is not configured to use number of workers; using inferred workers instead')
+
+            instance_details[task]['override_instance_stats'] = {
                 'MemoryMiB': {'Min': task_ram[0], 'Max': task_ram[1]},
                 'VCpuCount': {'Min': task_cpu[0], 'Max': task_cpu[1]},
                 'SpotMaxPricePercentageOverLowestPrice': 100,
-                'MemoryGiBPerVCpu': {'Min': ram2cpu_ratio[0], 'Max': ram2cpu_ratio[1]}
+                'MemoryGiBPerVCpu': {'Min': ram2cpu_ratio[0], 'Max': ram2cpu_ratio[1]} if ram2cpu_ratio else None
             }
-        }
+
+        if task_instance_type:
+            logger.warning('For task %s, the configured instance type will override the configured ram/cpu values', task)
 
     return instance_details
 

@@ -14,8 +14,8 @@ from . import ADDITIONAL_KEYS, DEFAULT_ARG_VALS, REQUIRED_ARGS
 logger = logging.getLogger(__name__)
 
 
-MachineSpec = Union[list[Union[int, list[int]]]]
-JobUnion = Literal['cleanup', 'create', 'destroy', 'engine', 'rsync', 'run', 'ssh', 'start', 'stop']
+MachineSpec = Union[list[Optional[Union[int, list[int]]]]]
+JobUnion = Literal['cleanup', 'create', 'destroy', 'engine', 'modify', 'rsync', 'run', 'ssh', 'start', 'stop']
 
 
 @dataclass
