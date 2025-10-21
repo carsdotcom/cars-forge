@@ -406,7 +406,7 @@ def create_template(n, config: Configuration, task):
         launch_template_kwargs['TagSpecifications'] = [{'ResourceType': 'instance', 'Tags': tags}]
 
     if sg:
-        specs['SecurityGroupIds'] = sg
+        launch_template_kwargs['SecurityGroupIds'] = sg
 
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
 
