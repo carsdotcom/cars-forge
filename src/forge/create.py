@@ -812,7 +812,8 @@ def get_instance_details(config: Configuration, task_list, *, worker_units: bool
             task_ratio = _check(ratio, 0)
             task_instance_type = _check(instance_type, 0)
 
-            task_worker_count = 1
+            if task_worker_count:
+                task_worker_count = 1
         elif 'cluster-worker' in task:
             task_ram = _check(ram, 1)
             task_cpu = _check(cpu, 1)
