@@ -313,6 +313,10 @@ def create_template(n, config: Configuration, task):
     market = market[-1] if task == 'cluster-worker' else market[0]
     if service:
         if user_ami[:4] == "ami-":
+            if not user_disk or not user_disk_device_name:
+                logger.error('disk and disk_device_name must be specified when manually setting an AMI ID')
+                sys.exit(1)
+
             ami, disk, disk_device_name = (user_ami, user_disk, user_disk_device_name)
         else:
             if gpu:
@@ -371,6 +375,9 @@ def create_template(n, config: Configuration, task):
     tags.append({'Key': 'forge-name', 'Value': n})
     specs = {'TagSpecifications': [{'ResourceType': 'instance', 'Tags': tags}]} if tags else {}
 
+    if sg:
+        specs['SecurityGroupIds'] = sg
+
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
 
     imds_v2 = 'required' if config.aws_imds_v2 else 'optional'
@@ -392,7 +399,6 @@ def create_template(n, config: Configuration, task):
             'KeyName': key,
             'InstanceInitiatedShutdownBehavior': 'terminate',
             'UserData': u,
-            'SecurityGroupIds': [sg],
             'MetadataOptions': metadata_options,
             **specs
         },

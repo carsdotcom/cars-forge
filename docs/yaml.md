@@ -6,7 +6,19 @@
 
 Each forge command certain parameters. A yaml file with all the parameters can be provided or you can submit the parameters as a CLI parameter at runtime. The CLI parameters will always overwrite the yaml parameters.
 
+- **ami** - Sets the AMI to be used
+  - Can be set as the name of an AMI in the `ec2_amis` data structure in the environmental YAML.
+    ```yaml
+    ami: single
+    ```
+  - If this is set to an AMI ID then `disk` and `disk_device_name` must be set as well.
+    ```yaml
+    ami: ami-000000000000000000
+    disk: 30
+    disk_device_name: /dev/sda1
+    ```
 - **aws_role** - The IAM role forge-*aws_role*-*forge_env* will be attached to the EC2s spun up by Forge.
+- **aws_imds_v2** - Toggle if [AWS IMDSv2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html) is required.
 - **cpu** - Minimum amount of vCPU required. Can be a range e.g. [2, 4].
     - If using a cluster, you must specify both the master and worker. Master first, worker second. 
       ```yaml
