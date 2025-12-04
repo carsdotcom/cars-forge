@@ -308,7 +308,7 @@ def pricing(n, config: Configuration, fleet_id):
         logger.info('Hourly price for %s is $%.2f', n, total_on_demand_cost)
 
 
-def create_template(n, config: Configuration, task):
+def create_template(n, config: Configuration, task, task_details):
     """creates EC2 Launch Template for n
 
     Parameters
@@ -319,6 +319,8 @@ def create_template(n, config: Configuration, task):
         Forge configuration data
     task : str
         Forge service to run
+    task_details : dict
+        Task instance details
     """
     ud = config.user_data
     key = config.ec2_key
@@ -347,8 +349,10 @@ def create_template(n, config: Configuration, task):
         else:
             if gpu:
                 user_ami += '_gpu'
+
             ami_info = env_ami.get(user_ami)
-            ami, disk, disk_device_name = (ami_info['ami'], ami_info['disk'], ami_info['disk_device_name'])
+            disk, disk_device_name = (ami_info['disk'], ami_info['disk_device_name'])
+            ami = list(task_details['ami_spec'].values())[0]
 
             if not imds_max_hops and ami_info.get('aws_imds_max_hops'):
                 imds_max_hops = ami_info['aws_imds_max_hops']
@@ -538,7 +542,7 @@ def get_placement_az(config: Configuration, instance_details, mode=None):
     else:
         kwargs = {
             'InstanceRequirementsWithMetadata': {
-                'ArchitectureTypes': ['x86_64'],  # ToDo: Make configurable
+                'ArchitectureTypes': list(instance_details['ami_spec'].keys()),
                 'InstanceRequirements': instance_details['override_instance_stats']
             }
         }
@@ -592,7 +596,7 @@ def get_placement_az(config: Configuration, instance_details, mode=None):
     return az
 
 
-def create_fleet(n, config: Configuration, task, instance_details):
+def create_fleet(n, config: Configuration, task, task_details):
     """creates the AWS EC2 fleet
 
     Parameters
@@ -603,7 +607,7 @@ def create_fleet(n, config: Configuration, task, instance_details):
         Forge configuration data
     task : str
         Forge service to run
-    instance_details: dict
+    task_details: dict
         EC2 instance details for create_fleet
 
     Returns
@@ -625,6 +629,8 @@ def create_fleet(n, config: Configuration, task, instance_details):
     market = config.market or DEFAULT_ARG_VALS['market']
     strategy = config.spot_strategy
 
+    if not isinstance(market, list):
+        market = [market]
     market = market[-1] if 'cluster-worker' in n else market[0]
 
     az = config.aws_az
@@ -650,7 +656,7 @@ def create_fleet(n, config: Configuration, task, instance_details):
             }
         },
         'TargetCapacitySpecification': {
-            'TotalTargetCapacity': instance_details['total_capacity'],
+            'TotalTargetCapacity': task_details['total_capacity'],
             'DefaultTargetCapacityType': market
         },
         'Type': 'maintain',
@@ -669,26 +675,32 @@ def create_fleet(n, config: Configuration, task, instance_details):
     if not tags:
         kwargs.pop('TagSpecifications')
 
-    launch_template_config = {
-        'LaunchTemplateSpecification': {'LaunchTemplateName': n, 'Version': '1'},
-        'Overrides': [{
-            'SubnetId': subnet[az],
-            'AvailabilityZone': az,
-        }]
+    overrides = {
+        'SubnetId': subnet[az],
+        'AvailabilityZone': az,
     }
 
-    if instance_details['instance_type']:
-        launch_template_config['Overrides'][0]['InstanceType'] = instance_details['instance_type']
+    if task_details['instance_type']:
+        overrides['InstanceType'] = task_details['instance_type']
     else:
         if gpu:
-            instance_details['override_instance_stats']['AcceleratorTypes'] = ['gpu']
+            task_details['override_instance_stats']['AcceleratorTypes'] = ['gpu']
         if excluded_ec2s:
-            instance_details['override_instance_stats']['ExcludedInstanceTypes'] = excluded_ec2s
+            task_details['override_instance_stats']['ExcludedInstanceTypes'] = excluded_ec2s
 
-        launch_template_config['Overrides'][0]['InstanceRequirements'] = instance_details['override_instance_stats']
-        kwargs['TargetCapacitySpecification']['TargetCapacityUnitType'] = instance_details['capacity_unit']
+        overrides['InstanceRequirements'] = task_details['override_instance_stats']
+        kwargs['TargetCapacitySpecification']['TargetCapacityUnitType'] = task_details['capacity_unit']
 
-    kwargs['LaunchTemplateConfigs'] = [launch_template_config]
+    kwargs['LaunchTemplateConfigs'] = [{
+        'LaunchTemplateSpecification': {'LaunchTemplateName': n, 'Version': '1'},
+        'Overrides': []
+    }]
+    for ami_arch, ami_id in task_details['ami_spec'].items():
+        kwargs['LaunchTemplateConfigs'][0]['Overrides'].append({
+            **overrides,
+            'ImageId': ami_id,
+        })
+
     kwargs['region'] = region
     logger.debug(kwargs)
     request = fleet_request(kwargs)
@@ -716,9 +728,12 @@ def search_and_create(config: Configuration, instance_details):
     date = config.date or ''
     markets = config.market or DEFAULT_ARG_VALS['market']
 
+    if not isinstance(markets, list):
+        markets = [markets]
+
     create_tasks = []
 
-    for task in instance_details.keys():
+    for task, task_details in instance_details.items():
         market = markets[-1] if task == 'cluster-worker' else markets[0]
         n = f'{name}-{market}-{task}-{date}'
 
@@ -732,20 +747,20 @@ def search_and_create(config: Configuration, instance_details):
                 if config.destroy_on_create:
                     logger.info('destroy_on_create true, destroying fleet.')
                     destroy(config)
-                    create_template(n, config, task)
+                    create_template(n, config, task, task_details)
                     create_tasks.append((task, n))
                     #create_fleet(n, config, task, instance_details)
             else:
                 if len(e['fleet_id']) != 0:
                     logger.info('Fleet is running without EC2, will recreate it.')
                     destroy(config)
-                create_template(n, config, task)
+                create_template(n, config, task, task_details)
                 create_tasks.append((task, n))
                 #create_fleet(n, config, task, instance_details)
         elif len(detail) > 1 and task != 'cluster-worker':
             logger.info('Multiple %s instances running, destroying and recreating', task)
             destroy(config)
-            create_template(n, config, task)
+            create_template(n, config, task, task_details)
             create_tasks.append((task, n))
             #create_fleet(n, config, task, instance_details)
             #detail = ec2_ip(n, config)
@@ -759,6 +774,56 @@ def search_and_create(config: Configuration, instance_details):
         fleet_requests.append((n, request))
 
     create_status(fleet_requests, config)
+
+
+def get_ami_spec(config: Configuration):
+    """
+
+    Parameters
+    ----------
+    config : Configuration
+        Forge configuration data
+
+    Returns
+    -------
+    dict
+        a resolved Forge AMI specification that maps AMI architecture to an AMI ID
+    """
+    arch = config.architecture or 'x86_64'
+    env_amis = config.ec2_amis
+    user_ami = config.ami
+    service = config.service
+    destroy_flag = config.destroy_after_failure
+
+    if user_ami and user_ami[:4] == 'ami-':
+        return {arch: user_ami}
+
+    ami_info = env_amis.get(user_ami) or env_amis.get(service)
+
+    if ami_spec := ami_info.get('ami_spec'):
+        ret = {}
+
+        if arch := config.architecture:
+            try:
+                ami_spec = {arch: ami_spec[arch]}
+            except KeyError:
+                logger.error('No matching AMI spec for the requested architecture')
+                if destroy_flag:
+                    destroy(config)
+                sys.exit(1)
+
+        for ami_arch, ami_spec_details in ami_spec.items():
+            if ami_id := ami_spec_details.get('id'):
+                ret[ami_arch] = ami_id
+            elif ami_filter := ami_spec_details.get('filter'): # ToDo: Implement AMI filters
+                logger.error('AMI filters have not been implemented yet.')
+                if destroy_flag:
+                    destroy(config)
+                sys.exit(1)
+
+        return ret
+
+    return {arch: ami_info['ami']}
 
 
 def get_instance_details(config: Configuration, task_list, *, worker_units: bool = True):
@@ -796,6 +861,7 @@ def get_instance_details(config: Configuration, task_list, *, worker_units: bool
         sys.exit(1)
 
     instance_details = {}
+    ami_spec = get_ami_spec(config)
 
     def _check(x, i):
         logger.debug('Get index %d of %s', i, x)
@@ -812,7 +878,7 @@ def get_instance_details(config: Configuration, task_list, *, worker_units: bool
             task_ratio = _check(ratio, 0)
             task_instance_type = _check(instance_type, 0)
 
-            if task_worker_count:
+            if task_worker_count or task_instance_type:
                 task_worker_count = 1
         elif 'cluster-worker' in task:
             task_ram = _check(ram, 1)
@@ -831,6 +897,7 @@ def get_instance_details(config: Configuration, task_list, *, worker_units: bool
             sys.exit(1)
 
         instance_details[task] = {
+            'ami_spec': ami_spec,
             'instance_type': task_instance_type,
             'total_capacity': task_worker_count,
             'capacity_unit': 'units' if task_worker_count else 'memory-mib',
