@@ -208,4 +208,6 @@ def modify(config: Configuration):
     if service == 'cluster':
         task_list = ['cluster-master', 'cluster-worker']
 
+    logger.warning('The modify command is experimental; fleet modifications may be unpredictable.')
+
     search_and_modify(config, task_list)
