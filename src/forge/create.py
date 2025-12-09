@@ -414,7 +414,12 @@ def create_template(n, config: Configuration, task, task_details):
 
     valid_tag = [{'Key': 'valid_until', 'Value': datetime.strftime(valid_until, "%Y-%m-%dT%H:%M:%SZ")}]
 
-    imds_v2 = 'required' if config.aws_imds_v2 else 'optional'
+
+    imds_v2 = 'required'
+    if config.aws_imds_v2:
+        imds_v2 = 'optional'
+        logger.warning('IMDSv1 has been enabled. This is insecure and not a recommended configuration.')
+
     metadata_options = {'HttpTokens': imds_v2}
 
     if imds_max_hops:
