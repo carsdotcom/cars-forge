@@ -28,7 +28,7 @@ def test_create_single(mock_search_create, mock_get_instance_details):
     config = Configuration(**{**BASE_CONFIG, 'service': 'single', 'aws_az': 'us-east-1a'})
     mock_get_instance_details.return_value = {'single': {}}
     create.create(config)
-    mock_search_create.assert_called_once_with(config, 'single', {})
+    mock_search_create.assert_called_once_with(config, {'single': {}})
 
 
 @mock.patch('forge.create.get_instance_details')
@@ -38,9 +38,7 @@ def test_create_cluster_master_workers(mock_search_create, mock_get_instance_det
     config = Configuration(**{**BASE_CONFIG, 'service': 'cluster', 'aws_az': 'us-east-1a'})
     mock_get_instance_details.return_value = {'cluster-master': {}, 'cluster-worker': {}}
     create.create(config)
-    mock_search_create.assert_has_calls([
-        mock.call(config, 'cluster-master', {}), mock.call(config, 'cluster-worker', {})
-    ])
+    mock_search_create.assert_called_once_with(config, {'cluster-master': {}, 'cluster-worker': {}})
 
 
 @pytest.mark.parametrize(

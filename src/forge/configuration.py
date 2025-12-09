@@ -14,8 +14,8 @@ from . import ADDITIONAL_KEYS, DEFAULT_ARG_VALS, REQUIRED_ARGS
 logger = logging.getLogger(__name__)
 
 
-MachineSpec = Union[list[Union[int, list[int]]]]
-JobUnion = Literal['cleanup', 'create', 'destroy', 'engine', 'rsync', 'run', 'ssh', 'start', 'stop']
+MachineSpec = Union[list[Optional[Union[int, list[int]]]]]
+JobUnion = Literal['cleanup', 'create', 'destroy', 'engine', 'modify', 'rsync', 'run', 'ssh', 'start', 'stop']
 
 
 @dataclass
@@ -30,6 +30,7 @@ class Configuration:
     additional_config: Optional[list[dict]] = None
     ami: Optional[str] = None
     app_dir: Optional[str] = None
+    architecture: Optional[str] = None
     aws_az: Optional[str] = None
     aws_imds_v2: Optional[bool] = None
     aws_imds_max_hops: Optional[int] = None
@@ -52,6 +53,7 @@ class Configuration:
     excluded_ec2s: Optional[list] = None
     gpu_flag: Optional[bool] = DEFAULT_ARG_VALS['gpu_flag']
     home_dir: Optional[str] = None
+    instance_type: Optional[list[Optional[str]]] = None
     log_level: Optional[Literal['DEBUG', 'INFO', 'WARNING', 'ERROR']] = DEFAULT_ARG_VALS['log_level']
     market: Optional[Union[str, list[str]]] = field(default_factory=lambda: DEFAULT_ARG_VALS['market'])
     market_failover: Optional[bool] = None  # ToDo: Remove
@@ -241,6 +243,7 @@ class Configuration:
         cpu = config_dict.get('cpu')
         ram = config_dict.get('ram')
         ratio = config_dict.get('ratio')
+        instance_type = config_dict.get('instance_type')
         ec2_max = config_dict.get('ec2_max')
 
         if aws_az and aws_multi_az:
@@ -322,9 +325,18 @@ class Configuration:
                     logger.error('ratio must have %s values for service %s', min_values, service)
                     sys.exit(1)
 
+                if instance_type and len(instance_type) != min_values:
+                    logger.error('instance_type must have %s values for service %s', min_values, service)
+                    sys.exit(1)
+
+
         # Random checks and transformations to conform to Forge's quirks
         if excluded_ec2s := cli_config.get('excluded_ec2s'):
-            config_dict['excluded_ec2s'] = list(sorted(set(config_dict['excluded_ec2s'] + cli_config['excluded_ec2s'])))
+            config_dict['excluded_ec2s'] = excluded_ec2s = list(sorted(set(config_dict['excluded_ec2s'] + cli_config['excluded_ec2s'])))
+
+            if instance_type and instance_type in excluded_ec2s:
+                logger.error('The instance type %s is excluded from use by excluded_ec2s', instance_type)
+                sys.exit(1)
 
         if not config_dict.get('aws_role'):
             logger.warning('No aws_role specified, continuing...')
@@ -340,6 +352,7 @@ class Configuration:
 
         return config
 
+    # ToDo: validate instance type
     def validate(self) -> bool:
         return self.validate_aws_permissions() and self.validate_job_args()
 

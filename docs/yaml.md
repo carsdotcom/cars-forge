@@ -17,6 +17,7 @@ Each forge command certain parameters. A yaml file with all the parameters can b
     disk: 30
     disk_device_name: /dev/sda1
     ```
+- **architecture** - Sets the instance architecture (i.e. x86_64, arm64).
 - **aws_role** - The IAM role forge-*aws_role*-*forge_env* will be attached to the EC2s spun up by Forge.
 - **aws_imds_v2** - Toggle if [AWS IMDSv2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html) is required.
 - **cpu** - Minimum amount of vCPU required. Can be a range e.g. [2, 4].
@@ -41,6 +42,7 @@ Each forge command certain parameters. A yaml file with all the parameters can b
 - **disk** - Disk size of the instance. Default is set up by the admin depending on the ami.
 - **forge_env** - The environment that corresponds with the environment yaml created by the admin. This houses all the AWS information that is required but won't change much between each run.
 - **gpu_flag** - Starts an instance with a GPU. Can be used only with docker. True or False. Default is False
+- **instance_type** - Specifies the EC2 instance type (i.e. t3.micro).
 - **log_level** - Override the default logging level (`info`). Valid options are: `debug`, `info`, `warning`, or `error`.
 - **market** - Start the instances as spot or on-demand. The default is spot.
     - If using a cluster, you must specify both the master and worker. Master first, worker second.

@@ -179,7 +179,7 @@ def test_forge_main(mock_pass, mock_execute, mock_validation, mock_aws_validate,
      [
          ('forge.configuration', 30, 'No user config provided, continuing with CLI arguments'),
          ('forge.configuration', 20, f'Opening dev config file at {os.path.join(TEST_DIR, "data", "admin_configs", "dev", "dev.yaml")}.'),
-         ('forge.create', 40, 'Invalid configuration, either ram or cpu must be provided.')
+         ('forge.create', 40, 'Invalid configuration, either ram, cpu, or instance_type must be provided.')
      ]),
     (['forge', 'create', '--forge-env', 'dev', '--config-dir', os.path.join(TEST_DIR, 'data', 'admin_configs'),
       '--name', 'test', '--service', 'single', '--aws-role', 'test', '--ram', '[[4],[8]]', '--no-destroy-after-failure'],

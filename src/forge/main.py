@@ -15,6 +15,7 @@ from .configure import cli_configure, configure
 from .stop import cli_stop, stop
 from .start import cli_start, start
 from .cleanup import cli_cleanup, cleanup
+from .modify import cli_modify, modify
 
 available_subcommands = [
     cli_create,
@@ -26,7 +27,8 @@ available_subcommands = [
     cli_ssh,
     cli_stop,
     cli_start,
-    cli_cleanup
+    cli_cleanup,
+    cli_modify,
 ]
 
 
@@ -96,6 +98,8 @@ def execute(config: Configuration):
         start(config)
     elif job == 'cleanup':
         cleanup(config)
+    elif job == 'modify':
+        modify(config)
 
     if job in {'run', 'engine'}:
         if not status and config.destroy_after_success:
