@@ -47,8 +47,7 @@ dynamic = ["version"]
 
 dependencies = [
     "boto3",
-    "pyyaml",
-    "schema",
+    "pyyaml"
 ]
 
 [project.optional-dependencies]
