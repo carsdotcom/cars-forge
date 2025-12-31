@@ -117,6 +117,51 @@ def ec2_ip(n, config: Configuration):
         return details
 
 
+def get_ami_spec(config: Configuration):
+    """
+
+    Parameters
+    ----------
+    config : Configuration
+        Forge configuration data
+
+    Returns
+    -------
+    dict
+        a resolved Forge AMI specification that maps AMI architecture to an AMI ID
+    """
+    arch = config.architecture or 'x86_64'
+    env_amis = config.ec2_amis
+    user_ami = config.ami
+    service = config.service
+
+    if user_ami and user_ami[:4] == 'ami-':
+        return {arch: user_ami}
+
+    ami_info = env_amis.get(user_ami) or env_amis.get(service)
+
+    if ami_spec := ami_info.get('ami_spec'):
+        ret = {}
+
+        if arch := config.architecture:
+            try:
+                ami_spec = {arch: ami_spec[arch]}
+            except KeyError:
+                logger.error('No matching AMI spec for the requested architecture')
+                raise
+
+        for ami_arch, ami_spec_details in ami_spec.items():
+            if ami_id := ami_spec_details.get('id'):
+                ret[ami_arch] = ami_id
+            elif ami_filter := ami_spec_details.get('filter'): # ToDo: Implement AMI filters
+                logger.error('AMI filters have not been implemented yet.')
+                raise ValueError
+
+        return ret
+
+    return {arch: ami_info['ami']}
+
+
 def get_ip(details, states):
     """get the fleet ID & IP for details that match state
 

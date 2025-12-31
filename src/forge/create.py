@@ -1,5 +1,6 @@
 """EC2 instance creation."""
 import base64
+import copy
 import logging
 import sys
 import math
@@ -13,7 +14,7 @@ from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_job_args, add_env_args, add_general_args, add_action_args
-from .common import ec2_ip, destroy_hook, exit_callback, user_accessible_vars, FormatEmpty, get_ec2_pricing
+from .common import ec2_ip, destroy_hook, exit_callback, user_accessible_vars, FormatEmpty, get_ec2_pricing, get_ami_spec
 from .configuration import Configuration
 from .destroy import destroy
 
@@ -337,6 +338,7 @@ def create_template(n, config: Configuration, task, task_details):
     valid = config.valid_time or DEFAULT_ARG_VALS['valid_time']
     config_dir = config.config_dir
     imds_max_hops = config.aws_imds_max_hops
+    arch = config.architecture or 'x86_64'
 
     market = market[-1] if task == 'cluster-worker' else market[0]
     if service:
@@ -345,14 +347,15 @@ def create_template(n, config: Configuration, task, task_details):
                 logger.error('disk and disk_device_name must be specified when manually setting an AMI ID')
                 sys.exit(1)
 
-            ami, disk, disk_device_name = (user_ami, user_disk, user_disk_device_name)
+            disk, disk_device_name = (user_disk, user_disk_device_name)
+            ami = {arch: user_ami}
         else:
             if gpu:
                 user_ami += '_gpu'
 
             ami_info = env_ami.get(user_ami)
             disk, disk_device_name = (ami_info['disk'], ami_info['disk_device_name'])
-            ami = list(task_details['ami_spec'].values())[0]
+            ami = task_details['ami_spec']
 
             if not imds_max_hops and ami_info.get('aws_imds_max_hops'):
                 imds_max_hops = ami_info['aws_imds_max_hops']
@@ -424,27 +427,28 @@ def create_template(n, config: Configuration, task, task_details):
     if imds_max_hops:
         metadata_options['HttpPutResponseHopLimit'] = imds_max_hops
 
-    response = client.create_launch_template(
-        LaunchTemplateName=n,
-        LaunchTemplateData={
-            'IamInstanceProfile': {'Name': role, },
-            'BlockDeviceMappings': [{'DeviceName': disk_device_name,
-                                     'Ebs': {'DeleteOnTermination': True,
-                                             'VolumeSize': disk,
-                                             'VolumeType': 'gp3'}},
-                                    ],
-            'ImageId': ami,
-            'KeyName': key,
-            'InstanceInitiatedShutdownBehavior': 'terminate',
-            'UserData': u,
-            'MetadataOptions': metadata_options,
-            **launch_template_kwargs
-        },
-        TagSpecifications=[{
-            'ResourceType': 'launch-template',
-            'Tags': valid_tag
-        }])
-    logger.info('Template %s created.', n)
+    for ami_arch, ami_id in ami.items():
+        response = client.create_launch_template(
+            LaunchTemplateName=f'{n}-{ami_arch}',
+            LaunchTemplateData={
+                'IamInstanceProfile': {'Name': role, },
+                'BlockDeviceMappings': [{'DeviceName': disk_device_name,
+                                         'Ebs': {'DeleteOnTermination': True,
+                                                 'VolumeSize': disk,
+                                                 'VolumeType': 'gp3'}},
+                                        ],
+                'ImageId': ami_id,
+                'KeyName': key,
+                'InstanceInitiatedShutdownBehavior': 'terminate',
+                'UserData': u,
+                'MetadataOptions': metadata_options,
+                **launch_template_kwargs
+            },
+            TagSpecifications=[{
+                'ResourceType': 'launch-template',
+                'Tags': valid_tag
+            }])
+        logger.info('Template %s created.', f'{n}-{ami_arch}')
 
 
 def calc_machine_ranges(*, ram=None, cpu=None, ratio=None, workers=None):
@@ -659,6 +663,7 @@ def create_fleet(n, config: Configuration, task, task_details):
                 }
             }
         },
+        'LaunchTemplateConfigs': [],
         'TargetCapacitySpecification': {
             'TotalTargetCapacity': task_details['total_capacity'],
             'DefaultTargetCapacityType': market
@@ -695,14 +700,24 @@ def create_fleet(n, config: Configuration, task, task_details):
         overrides['InstanceRequirements'] = task_details['override_instance_stats']
         kwargs['TargetCapacitySpecification']['TargetCapacityUnitType'] = task_details['capacity_unit']
 
-    kwargs['LaunchTemplateConfigs'] = [{
-        'LaunchTemplateSpecification': {'LaunchTemplateName': n, 'Version': '1'},
-        'Overrides': []
-    }]
     for ami_arch, ami_id in task_details['ami_spec'].items():
-        kwargs['LaunchTemplateConfigs'][0]['Overrides'].append({
-            **overrides,
-            'ImageId': ami_id,
+        if ami_arch == 'x86_64':
+            cpu_manufacturers = ['intel', 'amd']
+        elif ami_arch == 'arm64':
+            cpu_manufacturers = ['amazon-web-services']
+        else:
+            logger.error(f'Unsupported ami architecture: {ami_arch}')
+            destroy(config)
+            sys.exit(1)
+
+        arch_overrides = copy.deepcopy(overrides)
+
+        if overrides.get('InstanceRequirements'):
+            arch_overrides['InstanceRequirements']['CpuManufacturers'] = cpu_manufacturers
+
+        kwargs['LaunchTemplateConfigs'].append({
+            'LaunchTemplateSpecification': {'LaunchTemplateName': f'{n}-{ami_arch}', 'Version': '$Latest'},
+            'Overrides': [arch_overrides]
         })
 
     kwargs['region'] = region
@@ -780,56 +795,6 @@ def search_and_create(config: Configuration, instance_details):
     create_status(fleet_requests, config)
 
 
-def get_ami_spec(config: Configuration):
-    """
-
-    Parameters
-    ----------
-    config : Configuration
-        Forge configuration data
-
-    Returns
-    -------
-    dict
-        a resolved Forge AMI specification that maps AMI architecture to an AMI ID
-    """
-    arch = config.architecture or 'x86_64'
-    env_amis = config.ec2_amis
-    user_ami = config.ami
-    service = config.service
-    destroy_flag = config.destroy_after_failure
-
-    if user_ami and user_ami[:4] == 'ami-':
-        return {arch: user_ami}
-
-    ami_info = env_amis.get(user_ami) or env_amis.get(service)
-
-    if ami_spec := ami_info.get('ami_spec'):
-        ret = {}
-
-        if arch := config.architecture:
-            try:
-                ami_spec = {arch: ami_spec[arch]}
-            except KeyError:
-                logger.error('No matching AMI spec for the requested architecture')
-                if destroy_flag:
-                    destroy(config)
-                sys.exit(1)
-
-        for ami_arch, ami_spec_details in ami_spec.items():
-            if ami_id := ami_spec_details.get('id'):
-                ret[ami_arch] = ami_id
-            elif ami_filter := ami_spec_details.get('filter'): # ToDo: Implement AMI filters
-                logger.error('AMI filters have not been implemented yet.')
-                if destroy_flag:
-                    destroy(config)
-                sys.exit(1)
-
-        return ret
-
-    return {arch: ami_info['ami']}
-
-
 def get_instance_details(config: Configuration, task_list, *, worker_units: bool = True):
     """calculate instance details & resources for fleet creation
     Parameters
@@ -865,7 +830,13 @@ def get_instance_details(config: Configuration, task_list, *, worker_units: bool
         sys.exit(1)
 
     instance_details = {}
-    ami_spec = get_ami_spec(config)
+
+    try:
+        ami_spec = get_ami_spec(config)
+    except (KeyError, ValueError):
+        if destroy_flag:
+            destroy(config)
+        sys.exit(1)
 
     def _check(x, i):
         logger.debug('Get index %d of %s', i, x)
