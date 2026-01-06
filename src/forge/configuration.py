@@ -32,6 +32,7 @@ class Configuration:
     app_dir: Optional[str] = None
     architecture: Optional[str] = None
     aws_az: Optional[str] = None
+    aws_cloudtrail: Optional[bool] = None
     aws_imds_v2: Optional[bool] = None
     aws_imds_max_hops: Optional[int] = None
     aws_multi_az: Optional[dict] = None

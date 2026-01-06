@@ -477,3 +477,50 @@ def exit_callback(config: Configuration, exit: bool = False):
         sys.exit(1)
 
     pass
+
+
+def get_cloudtrail_events(filters: dict = None, *, lookup_kwargs: dict = None) -> list[dict]:
+    if not filters:
+        filters = {}
+    if not lookup_kwargs:
+        lookup_kwargs = {}
+
+    data = []
+    try:
+        sts = boto3.client('sts')
+        cloudtrail = boto3.client('cloudtrail')
+
+        user_arn = sts.get_caller_identity()['Arn']
+        username = user_arn.split(':')[-1].split('/')[-1]
+
+        response = {'NextToken': True}
+        while response.get('NextToken'):
+            response = cloudtrail.lookup_events(
+                LookupAttributes=[{
+                    'AttributeKey': 'Username',
+                    'AttributeValue': username,
+                }],
+                **lookup_kwargs
+            )
+
+            data += [{**event, 'CloudTrailEvent': json.loads(event['CloudTrailEvent'])} for event in response['Events']]
+
+            lookup_kwargs['NextToken'] = response.get('NextToken')
+    except ClientError as e:
+        logger.error(e)
+
+    for filter_type, filter_data in filters.items():
+        if filter_type == 'event_names':
+            data = list(filter(lambda event: event['EventName'] in filter_data, data))
+        elif filter_type == 'error':
+            data = list(filter(lambda event: filter_data if event['CloudTrailEvent'].get('errorCode') else not filter_data, data))
+        elif filter_type == 'error_codes':
+            data = list(filter(lambda event: event['CloudTrailEvent'].get('errorCode') in filter_data, data))
+        elif filter_type == 'not_error_codes':
+            data = list(filter(lambda event: event['CloudTrailEvent'].get('errorCode') not in filter_data, data))
+        elif filter_type == 'func':
+            data = list(filter(filter_data, data))
+        else:
+            logger.error('Unknown CloudTrail events filter')
+
+    return data

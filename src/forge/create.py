@@ -6,7 +6,7 @@ import sys
 import math
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import boto3
 import botocore.exceptions
@@ -14,7 +14,16 @@ from botocore.exceptions import ClientError
 
 from . import DEFAULT_ARG_VALS, REQUIRED_ARGS
 from .parser import add_basic_args, add_job_args, add_env_args, add_general_args, add_action_args
-from .common import ec2_ip, destroy_hook, exit_callback, user_accessible_vars, FormatEmpty, get_ec2_pricing, get_ami_spec
+from .common import (
+    ec2_ip,
+    destroy_hook,
+    exit_callback,
+    user_accessible_vars,
+    FormatEmpty,
+    get_ec2_pricing,
+    get_ami_spec,
+    get_cloudtrail_events
+)
 from .configuration import Configuration
 from .destroy import destroy
 
@@ -138,7 +147,7 @@ def get_status(client, ec2_id):
     return status
 
 
-def create_status(request_list, config: Configuration):
+def create_status(request_list, config: Configuration, fleet_create_time):
     """create the console status messages for Forge
 
     Parameters
@@ -147,6 +156,8 @@ def create_status(request_list, config: Configuration):
         List of requests and fleet names
     config : Configuration
         Forge configuration data
+    fleet_create_time : datetime.datetime
+        Start time for CloudTrail logging
     """
     destroy_flag = config.destroy_after_failure
 
@@ -179,6 +190,26 @@ def create_status(request_list, config: Configuration):
 
     uninitialized_fleets = list(filter(lambda x: not x['initialized'], fleet_info.values()))
     while uninitialized_fleets:
+        if config.aws_cloudtrail:
+            ct_errors = get_cloudtrail_events(
+                filters={
+                    'event_names': ['CreateFleet', 'RunInstances'],
+                    'error': True,
+                    'not_error_codes': ['Client.DryRunOperation'],
+                },
+                lookup_kwargs={
+                    'StartTime': fleet_create_time,
+                }
+            )
+
+            if ct_errors:
+                for ct_error in ct_errors:
+                    logger.error('Got error in CloudTrail: %s', ct_error['CloudTrailEvent']['errorCode'])
+
+                if destroy_flag:
+                    destroy(config)
+                exit_callback(config, exit=True)
+
         for fleet in uninitialized_fleets:
             n = fleet['n']
             fleet_id = fleet['fleet_id']
@@ -787,12 +818,14 @@ def search_and_create(config: Configuration, instance_details):
                 #if e['state'] == 'running':
                     #logger.info('%s is running, the IP is %s', task, e['ip'])
 
+    fleet_create_time = datetime.now(tz=timezone.utc)
+
     fleet_requests = []
     for task, n in create_tasks:
         request = create_fleet(n, config, task, instance_details[task])
         fleet_requests.append((n, request))
 
-    create_status(fleet_requests, config)
+    create_status(fleet_requests, config, fleet_create_time)
 
 
 def get_instance_details(config: Configuration, task_list, *, worker_units: bool = True):
