@@ -195,7 +195,7 @@ def create_status(request_list, config: Configuration, fleet_create_time):
                 filters={
                     'event_names': ['CreateFleet', 'RunInstances'],
                     'error': True,
-                    'not_error_codes': ['Client.DryRunOperation'],
+                    'ignore_error_codes': ['Client.DryRunOperation'],
                 },
                 lookup_kwargs={
                     'StartTime': fleet_create_time,

@@ -516,7 +516,7 @@ def get_cloudtrail_events(filters: dict = None, *, lookup_kwargs: dict = None) -
             data = list(filter(lambda event: filter_data if event['CloudTrailEvent'].get('errorCode') else not filter_data, data))
         elif filter_type == 'error_codes':
             data = list(filter(lambda event: event['CloudTrailEvent'].get('errorCode') in filter_data, data))
-        elif filter_type == 'not_error_codes':
+        elif filter_type == 'ignore_error_codes':
             data = list(filter(lambda event: event['CloudTrailEvent'].get('errorCode') not in filter_data, data))
         elif filter_type == 'func':
             data = list(filter(filter_data, data))
