@@ -94,7 +94,10 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
  		  x86_64:
   		  	id: ami-abcdefghi22222222
  		  arm64:
-  		  	id: ami-abcdefghi11111111
+  		  	name: forge-ami-*
+ 			tag:
+ 				key: state
+ 				value: tested
 	    disk: 30
 	    disk_device_name: /dev/xvda
 	  single_gpu:
@@ -138,3 +141,4 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	set -x
 	echo "$(cat /root/.ssh/authorized_keys | sed 's/^.*ssh-rsa/ssh-rsa/')" > /root/.ssh/authorized_keys
 	```
+- **wrap_role** - Disable the mangling that Forge automatically adds to role names.
