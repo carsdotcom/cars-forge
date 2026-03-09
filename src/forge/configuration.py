@@ -75,6 +75,7 @@ class Configuration:
     user_data: Optional[Union[dict, list]] = None
     valid_time: Optional[int] = DEFAULT_ARG_VALS['valid_time']
     workers: Optional[int] = None
+    wrap_role: Optional[bool] = None
     yaml: Optional[str] = None
     yaml_dir: Optional[str] = None
 
@@ -341,7 +342,7 @@ class Configuration:
 
         if not config_dict.get('aws_role'):
             logger.warning('No aws_role specified, continuing...')
-        else:
+        elif config_dict.get('wrap_role', True):
             config_dict['aws_role'] = '-'.join(filter(None, ['forge', config_dict['aws_role'], forge_env]))
 
         # Create configuration
