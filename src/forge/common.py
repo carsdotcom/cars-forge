@@ -12,6 +12,7 @@ from numbers import Number
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
+import dateutil.parser
 
 from . import DEFAULT_ARG_VALS, ADDITIONAL_KEYS
 from .configuration import Configuration
@@ -153,9 +154,53 @@ def get_ami_spec(config: Configuration):
         for ami_arch, ami_spec_details in ami_spec.items():
             if ami_id := ami_spec_details.get('id'):
                 ret[ami_arch] = ami_id
-            elif ami_filter := ami_spec_details.get('filter'): # ToDo: Implement AMI filters
-                logger.error('AMI filters have not been implemented yet.')
-                raise ValueError
+            elif 'name' in ami_spec_details or 'tag' in ami_spec_details:
+                kwargs = {
+                    'IncludeDeprecated': False,
+                    'IncludeDisabled': False,
+                    'Filters': [
+                        {'Name': 'architecture', 'Values': [ami_arch]},
+                        {'Name': 'image-type', 'Values': ['machine']}
+                    ]
+                }
+
+                if ami_owners := ami_spec_details.get('owners'):
+                    if not isinstance(ami_owners, list):
+                        ami_owners = [ami_owners]
+
+                    ami_owners = list(map(str, ami_owners))
+
+                    kwargs['Owners'] = ami_owners
+
+                if ami_name := ami_spec_details.get('name'):
+                    kwargs['Filters'].append({'Name': 'name', 'Values': [ami_name]})
+                if ami_tag := ami_spec_details.get('tag'):
+                    kwargs['Filters'].append({'Name': f'tag:{ami_tag["key"]}', 'Values': [ami_tag["value"]]})
+
+                images: list[dict] = []
+                client = boto3.client('ec2')
+
+                while True:
+                    response = client.describe_images(**kwargs)
+                    images.extend(response['Images'])
+
+                    if 'NextToken' not in response:
+                        break
+
+                    kwargs['NextToken'] = response['NextToken']
+
+                if not images:
+                    logger.error('No images found for architecture %s.', ami_arch)
+                    raise ValueError
+
+                for image in images:
+                    image['CreationDate'] = dateutil.parser.parse(image['CreationDate'])
+
+                images = list(sorted(images, key=lambda image: image['CreationDate'], reverse=True))
+
+                most_recent = ami_spec_details.get('most_recent', 0)
+
+                ret[ami_arch] = images[most_recent]['ImageId']
 
         return ret
 
