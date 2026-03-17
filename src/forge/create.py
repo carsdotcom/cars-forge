@@ -573,7 +573,12 @@ def get_placement_az(config: Configuration, instance_details, mode=None):
 
     client = boto3.client('ec2')
     az_info = client.describe_availability_zones()
-    az_mapping = {x['ZoneId']: x['ZoneName'] for x in az_info['AvailabilityZones']}
+    az_mapping = {
+        x['ZoneId']: x['ZoneName']
+        for x
+        in az_info['AvailabilityZones']
+        if x['OptInStatus'] != 'not-opted-in'
+    }
 
     kwargs = {}
     if instance_details['instance_type']:
@@ -596,7 +601,12 @@ def get_placement_az(config: Configuration, instance_details, mode=None):
             **kwargs
         )
 
-        placement = {az_mapping[x['AvailabilityZoneId']]: x['Score'] for x in response['SpotPlacementScores']}
+        placement = {
+            az_mapping[x['AvailabilityZoneId']]: x['Score']
+            for x
+            in response['SpotPlacementScores']
+            if x['AvailabilityZoneId'] in az_mapping
+        }
         logger.debug(placement)
     except botocore.exceptions.ClientError as e:
         logger.error('Permissions to pull spot placement scores are necessary')

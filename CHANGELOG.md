@@ -16,6 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Create** - Change how the capacity unit type is specified to better allow `modify` to work
 - **Documentation** - Update documentation
 
+## [1.3.6]
+
+### Changed
+- **Create** - Add fix for local zones populating in placement scores
+
 ## [1.3.5]
 
 ### Changed
@@ -124,7 +129,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Initial commit** - Forge source code, unittests, docs, pyproject.toml, README.md, and LICENSE files.
 
 [unreleased]: https://github.com/carsdotcom/cars-forge/compare/v1.4.0...HEAD
-[1.4.0]: https://github.com/carsdotcom/cars-forge/compare/v1.3.5...v1.4.0
+[1.4.0]: https://github.com/carsdotcom/cars-forge/compare/v1.3.6...v1.4.0
+[1.3.6]: https://github.com/carsdotcom/cars-forge/compare/v1.3.5...v1.3.6
 [1.3.5]: https://github.com/carsdotcom/cars-forge/compare/v1.3.4...v1.3.5
 [1.3.4]: https://github.com/carsdotcom/cars-forge/compare/v1.3.3...v1.3.4
 [1.3.3]: https://github.com/carsdotcom/cars-forge/compare/v1.3.2...v1.3.3
