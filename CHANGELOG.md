@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Modify** - Added the `modify` command
 - **Create** - Added multi-architecture support
 - **Configuration** - Added multi-architecture AMI configuration
+- **Configuration** - Added AMI search filters
 
 ### Changed
 - **Create** - Start the master and worker at the same time
