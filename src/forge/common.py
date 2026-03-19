@@ -174,8 +174,15 @@ def get_ami_spec(config: Configuration):
 
                 if ami_name := ami_spec_details.get('name'):
                     kwargs['Filters'].append({'Name': 'name', 'Values': [ami_name]})
-                if ami_tag := ami_spec_details.get('tag'):
-                    kwargs['Filters'].append({'Name': f'tag:{ami_tag["key"]}', 'Values': [ami_tag["value"]]})
+                if ami_tags := ami_spec_details.get('tags'):
+                    for ami_tag in ami_tags:
+                        if ami_tag_val := ami_tag['value']:
+                            if not isinstance(ami_tag_val, list):
+                                ami_tag_val = [ami_tag_val]
+
+                            kwargs['Filters'].append({'Name': f'tag:{ami_tag["key"]}', 'Values': ami_tag_val})
+                        else:
+                            kwargs['Filters'].append({'Name': 'tag-key', 'Values': [ami_tag['key']]})
 
                 images: list[dict] = []
                 client = boto3.client('ec2')
