@@ -78,7 +78,7 @@ def rsync(config: Configuration):
                 logger.error("File or folder from 'rsync_path' parameter not found: %s", rsync_loc)
                 sys.exit(1)
 
-            cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+            cmd = 'rsync -rave "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 -o ConnectTimeout=30'
             cmd += f' -i {pem_path}" {rsync_loc} root@{ip}:/root/'
 
             try:
