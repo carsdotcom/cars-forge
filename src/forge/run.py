@@ -80,7 +80,7 @@ def run(config: Configuration):
         with key_file(pem_secret, region, profile) as pem_path:
             fmt = FormatEmpty()
             run_cmd = fmt.format(run_cmd, **user_accessible_vars(config, market=market, task=task, ip=ip))
-            cmd = 'ssh -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+            cmd = 'ssh -t -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=5 -o ConnectTimeout=30'
             cmd += f' -i {pem_path} root@{ip} /root/{run_cmd}'
 
             try:
