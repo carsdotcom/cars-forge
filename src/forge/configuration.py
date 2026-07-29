@@ -236,6 +236,8 @@ class Configuration:
         }}
 
         # Config normalization
+        log_level = config_dict.get('log_level')
+
         aws_az = config_dict.get('aws_az')
         aws_region = config_dict.get('aws_region')
         aws_multi_az = config_dict.get('aws_multi_az')
@@ -247,6 +249,9 @@ class Configuration:
         ratio = config_dict.get('ratio')
         instance_type = config_dict.get('instance_type')
         ec2_max = config_dict.get('ec2_max')
+
+        if log_level:
+            config_dict['log_level'] = log_level.upper()
 
         if aws_az and aws_multi_az:
             logger.warning('The config options aws_az and aws_multi_az are mutually exclusive, defaulting to aws_az')
