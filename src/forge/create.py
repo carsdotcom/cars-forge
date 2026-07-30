@@ -265,11 +265,13 @@ def create_status(request_list, config: Configuration, fleet_create_time):
 
                     fleet_info[n]['time_without_instance'] += 10
                 else:
+                    all_ok = True
                     for s in fleet_ec2_id_list:
                         status = get_status(client, s)
                         logger.debug('Current status for %s: %s', n, status)
 
                         if status != 'ok':
+                            all_ok = False
                             logger.info('EC2 Initializing for %s... - %ds elapsed', n, fleet_time)
 
                             if status == 'no-status':
@@ -285,10 +287,11 @@ def create_status(request_list, config: Configuration, fleet_create_time):
                                 if destroy_flag:
                                     destroy(config)
                                 exit_callback(config, exit=True)
-                        else:
-                            logger.info('EC2 initialized for %s.', n)
-                            fleet_info[n]['initialized'] = True
-                            pricing(n, config, fleet_id)
+
+                    if all_ok:
+                        logger.info('EC2 initialized for %s.', n)
+                        fleet_info[n]['initialized'] = True
+                        pricing(n, config, fleet_id)
 
             fleet_info[n]['time'] += 10
 
