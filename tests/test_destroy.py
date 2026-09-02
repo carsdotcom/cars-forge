@@ -55,8 +55,9 @@ def test_destroy(mock_find_and_destroy, service, market):
 @mock.patch("forge.destroy.ec2_ip")
 @mock.patch("forge.destroy.pricing")
 @mock.patch("forge.destroy.fleet_destroy")
+@mock.patch("forge.destroy.template_destroy")
 @pytest.mark.parametrize("service, market", [("single", ["spot"]), ("cluster", ["spot", "spot"])])
-def test_find_and_destroy(mock_fleet_destroy, mock_pricing, mock_ec2_ip, service, market):
+def test_find_and_destroy(mock_template_destroy, mock_fleet_destroy, mock_pricing, mock_ec2_ip, service, market):
     ip = "123.456.789"
     fleet_id = "abc-123"
     ec2_details = [{"ip": ip, "spot_id": ["abc"], "state": None, "fleet_id": fleet_id}]
