@@ -22,7 +22,7 @@ Forge create will create an EC2 fleet using the yaml file you provide. It will b
 2. `service`
 3. `aws_role`
 4. `forge_env`
-5. Either `ram` or `cpu`
+5. Either `ram`, `cpu`, or `instance_type`
 
 #### Optional 
 1. `disk`
@@ -36,3 +36,5 @@ Forge create will create an EC2 fleet using the yaml file you provide. It will b
 9. `destroy_after_failure`
 10. `date`
 11. `yaml`
+12. `instance_type`
+13. `architecture`

@@ -12,6 +12,7 @@ from numbers import Number
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
+import dateutil.parser
 
 from . import DEFAULT_ARG_VALS, ADDITIONAL_KEYS
 from .configuration import Configuration
@@ -115,6 +116,102 @@ def ec2_ip(n, config: Configuration):
                 details.append(x)
         logger.debug('ec2_ip details is %s', details)
         return details
+
+
+def get_ami_spec(config: Configuration):
+    """
+
+    Parameters
+    ----------
+    config : Configuration
+        Forge configuration data
+
+    Returns
+    -------
+    dict
+        a resolved Forge AMI specification that maps AMI architecture to an AMI ID
+    """
+    arch = config.architecture or 'x86_64'
+    env_amis = config.ec2_amis
+    user_ami = config.ami
+    service = config.service
+
+    if user_ami and user_ami[:4] == 'ami-':
+        return {arch: user_ami}
+
+    ami_info = env_amis.get(user_ami) or env_amis.get(service)
+
+    if ami_spec := ami_info.get('ami_spec'):
+        ret = {}
+
+        if arch := config.architecture:
+            try:
+                ami_spec = {arch: ami_spec[arch]}
+            except KeyError:
+                logger.error('No matching AMI spec for the requested architecture')
+                raise
+
+        for ami_arch, ami_spec_details in ami_spec.items():
+            if ami_id := ami_spec_details.get('id'):
+                ret[ami_arch] = ami_id
+            elif 'name' in ami_spec_details or 'tag' in ami_spec_details:
+                kwargs = {
+                    'IncludeDeprecated': False,
+                    'IncludeDisabled': False,
+                    'Filters': [
+                        {'Name': 'architecture', 'Values': [ami_arch]},
+                        {'Name': 'image-type', 'Values': ['machine']}
+                    ]
+                }
+
+                if ami_owners := ami_spec_details.get('owners'):
+                    if not isinstance(ami_owners, list):
+                        ami_owners = [ami_owners]
+
+                    ami_owners = list(map(str, ami_owners))
+
+                    kwargs['Owners'] = ami_owners
+
+                if ami_name := ami_spec_details.get('name'):
+                    kwargs['Filters'].append({'Name': 'name', 'Values': [ami_name]})
+                if ami_tags := ami_spec_details.get('tags'):
+                    for ami_tag in ami_tags:
+                        if ami_tag_val := ami_tag['value']:
+                            if not isinstance(ami_tag_val, list):
+                                ami_tag_val = [ami_tag_val]
+
+                            kwargs['Filters'].append({'Name': f'tag:{ami_tag["key"]}', 'Values': ami_tag_val})
+                        else:
+                            kwargs['Filters'].append({'Name': 'tag-key', 'Values': [ami_tag['key']]})
+
+                images: list[dict] = []
+                client = boto3.client('ec2')
+
+                while True:
+                    response = client.describe_images(**kwargs)
+                    images.extend(response['Images'])
+
+                    if 'NextToken' not in response:
+                        break
+
+                    kwargs['NextToken'] = response['NextToken']
+
+                if not images:
+                    logger.error('No images found for architecture %s.', ami_arch)
+                    raise ValueError
+
+                for image in images:
+                    image['CreationDate'] = dateutil.parser.parse(image['CreationDate'])
+
+                images = list(sorted(images, key=lambda image: image['CreationDate'], reverse=True))
+
+                most_recent = ami_spec_details.get('most_recent', 0)
+
+                ret[ami_arch] = images[most_recent]['ImageId']
+
+        return ret
+
+    return {arch: ami_info['ami']}
 
 
 def get_ip(details, states):
@@ -432,3 +529,50 @@ def exit_callback(config: Configuration, exit: bool = False):
         sys.exit(1)
 
     pass
+
+
+def get_cloudtrail_events(filters: dict = None, *, lookup_kwargs: dict = None) -> list[dict]:
+    if not filters:
+        filters = {}
+    if not lookup_kwargs:
+        lookup_kwargs = {}
+
+    data = []
+    try:
+        sts = boto3.client('sts')
+        cloudtrail = boto3.client('cloudtrail')
+
+        user_arn = sts.get_caller_identity()['Arn']
+        username = user_arn.split(':')[-1].split('/')[-1]
+
+        response = {'NextToken': True}
+        while response.get('NextToken'):
+            response = cloudtrail.lookup_events(
+                LookupAttributes=[{
+                    'AttributeKey': 'Username',
+                    'AttributeValue': username,
+                }],
+                **lookup_kwargs
+            )
+
+            data += [{**event, 'CloudTrailEvent': json.loads(event['CloudTrailEvent'])} for event in response['Events']]
+
+            lookup_kwargs['NextToken'] = response.get('NextToken')
+    except ClientError as e:
+        logger.error(e)
+
+    for filter_type, filter_data in filters.items():
+        if filter_type == 'event_names':
+            data = list(filter(lambda event: event['EventName'] in filter_data, data))
+        elif filter_type == 'error':
+            data = list(filter(lambda event: filter_data if event['CloudTrailEvent'].get('errorCode') else not filter_data, data))
+        elif filter_type == 'error_codes':
+            data = list(filter(lambda event: event['CloudTrailEvent'].get('errorCode') in filter_data, data))
+        elif filter_type == 'ignore_error_codes':
+            data = list(filter(lambda event: event['CloudTrailEvent'].get('errorCode') not in filter_data, data))
+        elif filter_type == 'func':
+            data = list(filter(filter_data, data))
+        else:
+            logger.error('Unknown CloudTrail events filter')
+
+    return data

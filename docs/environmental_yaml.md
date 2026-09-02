@@ -76,7 +76,7 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	- default is [8, 8]
 - **ec2_amis** - A dictionary of dictionaries to store [AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html) info.
 	- Needs three parameters: 
-		- ami id
+		- ami specification
         - minimum disk size
         - [device name](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html)
     - Optional parameters:
@@ -90,11 +90,22 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	    disk_device_name: /dev/sda1
 	    aws_imds_max_hops: 2
 	  cluster:
-	    ami: ami-12345678abcdefghi
+	    ami_spec:
+ 		  x86_64:
+  		  	id: ami-abcdefghi22222222
+ 		  arm64:
+  		  	name: forge-ami-*
+ 			tag:
+ 				key: state
+ 				value: tested
 	    disk: 30
 	    disk_device_name: /dev/xvda
 	  single_gpu:
-	    ami: ami-abcdefghi00000000
+	    ami_spec:
+ 		  x86_64:
+  		  	id: ami-abcdefghi22222222
+ 		  arm64:
+  		  	id: ami-abcdefghi11111111
 	    disk: 90
 	    disk_device_name: /dev/sda1
 	    aws_imds_max_hops: 2
@@ -130,3 +141,4 @@ https://github.com/carsdotcom/cars-forge/blob/main/examples/env_yaml_example/exa
 	set -x
 	echo "$(cat /root/.ssh/authorized_keys | sed 's/^.*ssh-rsa/ssh-rsa/')" > /root/.ssh/authorized_keys
 	```
+- **wrap_role** - Disable the mangling that Forge automatically adds to role names.

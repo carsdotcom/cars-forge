@@ -60,7 +60,7 @@ def nonnegative_int_arg(string):
     return number
 
 
-def list_string(string):
+def list_string(string, allowed_types):
     """helper function to check that checks a string is alist
 
     Passes string to ast.literal_eval to parse, and if it cannot then it raises an error.
@@ -69,6 +69,8 @@ def list_string(string):
     ----------
     string : str
         The list to parse by ast.literal_eval
+    allowed_types : list[type]
+        The types allowed in the container
 
     Returns
     -------
@@ -78,20 +80,34 @@ def list_string(string):
     Raises
     ------
     argparse.ArgumentTypeError
-        If the string is not a list of list of ints
+        If the string is not a list of list of allowed_types
     """
-    msg = 'Must be a string that can be formatted by ast.literal_eval into list[list[int]]'
+    msg = 'Must be a string that can be formatted by ast.literal_eval'
     try:
         ret = literal_eval(string)
     except ValueError:
         raise argparse.ArgumentTypeError(msg) from None
 
     for i in ret:
-        for j in i:
-            if not isinstance(j, int):
+        if isinstance(i, list):
+            for j in i:
+                if type(j) not in allowed_types:
+                    raise argparse.ArgumentTypeError(msg)
+        else:
+            if type(i) not in allowed_types:
                 raise argparse.ArgumentTypeError(msg)
 
     return ret
+
+
+def _list_string_of_ints(string):
+    return list_string(string, [int, str])
+
+def _list_string_of_optional_ints(string):
+    return list_string(string, [int, str, type(None)])
+
+def _list_string_of_optional_strings(string):
+    return list_string(string, [str, type(None)])
 
 
 def add_basic_args(parser):
@@ -125,9 +141,10 @@ def add_job_args(parser, *, suppress: bool = False):
         help_message = argparse.SUPPRESS
 
     common_grp = parser.add_argument_group('Common job arguments')
-    common_grp.add_argument('--ram', type=list_string, help=help_message)
-    common_grp.add_argument('--cpu', type=list_string, help=help_message)
-    common_grp.add_argument('--ratio', type=list_string, help=help_message)
+    common_grp.add_argument('--ram', type=_list_string_of_ints, help=help_message)
+    common_grp.add_argument('--cpu', type=_list_string_of_ints, help=help_message)
+    common_grp.add_argument('--ratio', type=_list_string_of_ints, help=help_message)
+    common_grp.add_argument('--instance_type', '--instance-type', type=_list_string_of_optional_strings, help=help_message)
     common_grp.add_argument('--aws_role', '--aws-role', help=help_message)
     common_grp.add_argument('--disk', type=positive_int_arg, help=help_message)
     common_grp.add_argument('--valid_time', '--valid-time', type=positive_int_arg, help=help_message)
@@ -159,6 +176,36 @@ def add_action_args(parser, *, suppress: bool = False):
     action_grp.add_argument('--s3_path', '--s3-path', help=help_message)
     action_grp.add_argument('--run_cmd', '--run-cmd', help=help_message)
     action_grp.add_argument('--all', action='store_true', dest='rr_all', help=help_message, default=None)
+
+
+def add_modify_args(parser, *, suppress: bool = False):
+    """adds modify arguments to parser
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        Argument parser for Forge.main
+    suppress : bool, optional
+        Whether the argument should be suppressed in help messages
+    """
+    help_message = None
+    if suppress:
+        help_message = argparse.SUPPRESS
+
+    modify_grp = parser.add_argument_group('Modify configuration')
+    modify_grp.add_argument('--ram', type=_list_string_of_optional_ints, help=help_message)
+    modify_grp.add_argument('--cpu', type=_list_string_of_optional_ints, help=help_message)
+    modify_grp.add_argument('--ratio', type=_list_string_of_optional_ints, help=help_message)
+    modify_grp.add_argument('--instance_type', '--instance-type', type=_list_string_of_optional_strings, help=help_message)
+    modify_grp.add_argument('--disk', type=positive_int_arg, help=help_message)
+    modify_grp.add_argument('--gpu', action='store_true', dest='gpu_flag', default=None, help=help_message)
+    modify_grp.add_argument('--ami', help=help_message)
+    modify_grp.add_argument('--disk_device_name', '--disk-device-name', help=help_message)
+
+    modify_grp.add_argument('--aws_role', '--aws-role', help=argparse.SUPPRESS)
+    modify_grp.add_argument('--user_data', '--user-data', nargs='*', help=argparse.SUPPRESS)
+    modify_grp.add_argument('--destroy_on_create', '--destroy-on-create', action='store_true', default=None, help=argparse.SUPPRESS)
+    modify_grp.add_argument('--valid_time', '--valid-time', type=positive_int_arg, help=argparse.SUPPRESS)
 
 
 def add_env_args(parser):
