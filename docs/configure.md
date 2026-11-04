@@ -28,6 +28,6 @@ This step should be needed only once per environment, usually done by someone on
 		Tags applied to EC2 and fleet (Optional): [{'Key': 'Name', 'Value': 'n'}, {'Key': 'Application', 'Value': 'name'}, {'Key': 'User', 'Value': 'user'}]
 		The default user_data files. Files are loaded to the config folder (Optional): {'single': 'single.sh', 'cluster': {'master': 'cluster-master.sh', 'worker': 'cluster-worker.sh'}}
 		Additional configs needed for your application (Optional): [{'name': 'pip', 'type': 'list', 'default': [], 'constraints': [], 'error': ''}]
-		Wed Sep 21 13:30:06 2022 -- INFO -- Config directory for /Users/test/envs/forge/lib/python3.6/site-packages/forge/config/test does no exist. Making directory.
+		Wed Sep 21 13:30:06 2022 -- INFO -- Config directory for /Users/test/envs/forge/lib/python3.6/site-packages/forge/config/test does not exist. Making directory.
 		Wed Sep 21 13:30:06 2022 -- INFO -- Created test config file.
 		```

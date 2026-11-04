@@ -67,7 +67,7 @@ def configure():
     if os.path.exists(config_dir):
         logger.info('Config directory for %s already exists. Overwriting.', config_dir)
     else:
-        logger.info('Config directory for %s does no exist. Making directory.', config_dir)
+        logger.info('Config directory for %s does not exist. Making directory.', config_dir)
         os.mkdir(config_dir)
 
     file = f'{config_dir}/{forge_env}.yaml'

@@ -38,7 +38,7 @@ def nonnegative_int_arg(string):
     Parameters
     ----------
     string : str
-        String to check if it is a nonegative int
+        String to check if it is a nonnegative int
 
     Returns
     -------
@@ -61,7 +61,7 @@ def nonnegative_int_arg(string):
 
 
 def list_string(string, allowed_types):
-    """helper function to check that checks a string is alist
+    """helper function to check that a string is a list
 
     Passes string to ast.literal_eval to parse, and if it cannot then it raises an error.
 
